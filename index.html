@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ハゼモト建設 朝礼安全・1人KYツール</title>
+<meta name="description" content="作業内容を入れるだけで、1人KY活動シート・朝礼共有メッセージ・LINE提出文を自動作成。ハゼモト建設の現場安全ツール。" />
+<meta name="theme-color" content="#1b3a5b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="安全KY" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231b3a5b'/%3E%3Ctext y='72' x='50' font-size='60' text-anchor='middle'%3E%F0%9F%A6%BA%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --navy:#1b3a5b; --navy2:#24527d; --accent:#ff7a00; --bg:#f4f6f9;
+    --card:#fff; --line:#e2e8f0; --ink:#1f2937; --sub:#64748b;
+    --r5:#c0392b; --r4:#e67e22; --r3:#f1c40f; --r2:#27ae60; --r1:#7f8c8d;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.6}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 18px;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+  header p{margin:4px 0 0;font-size:12px;opacity:.85}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 14px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .step{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .step .n{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+  label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px;font-weight:600}
+  input[type=text],input[type=date],textarea,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+  textarea{min-height:84px;resize:vertical}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-size:14px;cursor:pointer;user-select:none;transition:.15s;font-weight:600}
+  .chip:hover{border-color:var(--navy2)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-sub{background:#eef2f7;color:var(--navy);border:1.5px solid var(--line);font-size:15px;padding:12px}
+  .hidden{display:none}
+  /* output */
+  .sheet h2{font-size:16px;margin:0 0 12px;color:var(--navy);border-left:5px solid var(--accent);padding-left:10px}
+  .meta{font-size:13px;color:var(--sub);margin-bottom:10px}
+  .hz{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;position:relative}
+  .hz .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{font-size:11px;font-weight:800;color:#fff;border-radius:6px;padding:2px 8px;white-space:nowrap}
+  .b5{background:var(--r5)}.b4{background:var(--r4)}.b3{background:var(--r3);color:#5b4b00}.b2{background:var(--r2)}.b1{background:var(--r1)}
+  .tag{font-size:11px;background:#eef2f7;color:var(--navy);border-radius:6px;padding:2px 8px;font-weight:700}
+  .hz .scene{font-weight:700;font-size:15px;margin:2px 0}
+  .hz .measure{font-size:14px;color:#374151;background:#f8fafc;border-radius:8px;padding:7px 10px;margin-top:6px}
+  .hz .measure b{color:var(--navy)}
+  .focus{background:#fff7ed;border:1.5px solid var(--accent);border-radius:10px;padding:12px;font-weight:700;color:#9a3412;margin:6px 0 14px}
+  .out-box{position:relative}
+  textarea.line-out{min-height:230px;font-size:14px;line-height:1.7;background:#0f1b2a;color:#e6edf3;border-color:#0f1b2a;border-radius:12px}
+  .copy{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer}
+  .copy.done{background:var(--r2)}
+  .hint{font-size:12px;color:var(--sub);margin-top:6px}
+  .pill-legend{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;margin-top:8px;color:var(--sub)}
+  .empty{color:var(--sub);font-size:14px;text-align:center;padding:14px}
+  details{margin-top:8px}summary{cursor:pointer;font-size:13px;color:var(--navy);font-weight:600}
+  @media print{
+    header,.no-print{display:none!important}
+    body{background:#fff}.card{box-shadow:none;border:none;page-break-inside:avoid}
+    .line-out,.out-box{display:none!important}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦺 ハゼモト建設 朝礼安全・1人KYツール</h1>
+  <p>作業内容を入れるだけ → KYシート・朝礼・LINE文を自動作成</p>
+</header>
+
+<div class="wrap">
+
+  <!-- 入力 -->
+  <div class="card no-print" id="inputCard">
+    <div class="step"><span class="n">1</span>現場の基本情報</div>
+    <div class="row">
+      <div><label>現場名</label><input type="text" id="site" placeholder="例）○○邸 新築" /></div>
+      <div style="max-width:150px"><label>日付</label><input type="date" id="day" /></div>
+    </div>
+    <div class="row" style="margin-top:0">
+      <div style="max-width:150px"><label>天候</label>
+        <select id="weather"><option>晴</option><option>曇</option><option>雨</option><option>雪</option><option>強風</option></select>
+      </div>
+      <div><label>作業者名</label><input type="text" id="worker" placeholder="任意" /></div>
+    </div>
+
+    <div class="step" style="margin-top:16px"><span class="n">2</span>今日の工種（複数可）</div>
+    <div class="chips" id="trades"></div>
+
+    <div class="step" style="margin-top:16px"><span class="n">3</span>今日の作業内容</div>
+    <textarea id="work" placeholder="例）基礎の型枠建込みと配筋。バックホウで残土搬出。"></textarea>
+    <div class="hint">具体的に書くほど、ぴったりの危険ポイントが選ばれます。</div>
+
+    <button class="btn btn-primary" id="gen" style="margin-top:16px">⚡ 安全シートを作成する</button>
+  </div>
+
+  <!-- 出力 -->
+  <div id="output" class="hidden">
+    <div class="card sheet">
+      <h2>📋 1人KY活動シート</h2>
+      <div class="meta" id="kyMeta"></div>
+      <div id="hazards"></div>
+      <div class="focus" id="focus"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--sub)">
+        <span>指差呼称</span><b style="color:var(--navy)">ヨシ！</b>
+        <span style="margin-left:auto">体調： 良 ・ 注意</span>
+      </div>
+    </div>
+
+    <div class="card no-print">
+      <h2 style="font-size:16px;margin:0 0 10px;color:var(--navy)">📣 朝礼 共有メッセージ</h2>
+      <div class="out-box">
+        <textarea class="line-out" id="asarei" readonly></textarea>
+        <button class="copy" data-target="asarei">コピー</button>
+      </div>
+    </div>
+
+    <div class="card no-print">
+      <h2 style="font-size:16px;margin:0 0 10px;color:var(--navy)">💬 LINE提出用（タップでコピー）</h2>
+      <div class="out-box">
+        <textarea class="line-out" id="lineout" readonly></textarea>
+        <button class="copy" data-target="lineout">コピー</button>
+      </div>
+      <div class="hint">コピー後、現場のLINEグループに貼り付けて送信してください。</div>
+    </div>
+
+    <div class="row no-print">
+      <button class="btn btn-sub" onclick="window.print()">🖨 KYシートを印刷/PDF</button>
+      <button class="btn btn-sub" id="back">↩ 入力に戻る</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===== 危険要因マスタ（§2カタログ） =====
+   sev=重篤度(致命10/重大6/中3/軽1) pos=可能性(確実6/高4/有2/低1) freq=頻度(頻繁4/時々2/まれ1)
+   リスク点 = sev+pos+freq  → Ⅴ:13-20 Ⅳ:9-12 Ⅲ:6-8 Ⅱ:3-5 Ⅰ:1-2 */
+const DB = {
+  "木造大工": [
+    {t:"墜落・転落", s:"足場・梁・脚立・屋根からの墜落、開口部への踏み抜き", m:"フルハーネス着用・親綱に掛ける／開口部は養生・表示／脚立の天板に乗らない", sev:10,pos:4,freq:2},
+    {t:"切れ・こすれ", s:"丸ノコのキックバック・インパクトでの手の負傷", m:"丸ノコは逆手切り禁止・刃カバー確認／手袋の巻き込みに注意", sev:6,pos:4,freq:4},
+    {t:"飛来・落下", s:"上下作業で材料・工具が落下し下の人に当たる", m:"上下同時作業をしない／工具に落下防止紐／下部を立入禁止に", sev:6,pos:2,freq:2},
+    {t:"腰痛", s:"重い建材の運搬・建て起こしで腰を痛める", m:"2人で運ぶ・台車を使う／無理な姿勢を取らない", sev:3,pos:4,freq:4}
+  ],
+  "土工事・掘削": [
+    {t:"崩壊・倒壊", s:"掘削のり面・溝の土砂が崩れて生き埋め", m:"掘削勾配を確保・土留め設置／作業前に地山を点検", sev:10,pos:2,freq:2},
+    {t:"激突され", s:"バックホウの旋回・後進に巻き込まれる", m:"旋回範囲を立入禁止／誘導員を配置し合図を統一", sev:10,pos:4,freq:2},
+    {t:"墜落・転落", s:"掘削端部・段差からの転落", m:"端部にバリケード・表示／安全な昇降設備を使う", sev:6,pos:2,freq:2},
+    {t:"地下埋設物", s:"ガス・水道・電線の損傷による事故", m:"事前に試掘・埋設物図を確認／不明時は手掘り", sev:6,pos:2,freq:1}
+  ],
+  "鉄筋": [
+    {t:"墜落・転落", s:"配筋上の歩行や差し筋でつまずき転倒・転落", m:"歩み板を敷く／差し筋にキャップを付ける", sev:6,pos:4,freq:4},
+    {t:"刺さり・引っかかり", s:"鉄筋端部・結束線で手足を負傷", m:"端部にキャップ／ハッカーを正しく使う・保護手袋", sev:3,pos:4,freq:4},
+    {t:"はさまれ・落下", s:"鉄筋の荷下ろし・玉掛けで荷の下敷き", m:"玉掛けは有資格者／介錯ロープ使用・吊荷の下に入らない", sev:10,pos:2,freq:2},
+    {t:"腰痛", s:"中腰での結束作業の繰り返し", m:"姿勢を交代・休憩を取る", sev:3,pos:4,freq:4}
+  ],
+  "型枠": [
+    {t:"はさまれ・巻き込まれ", s:"パネル・H鋼の建込み、クレーン吊込みで手を挟む", m:"鋼材ハッカーを使い型枠に直接手を添えない／合図を統一", sev:6,pos:4,freq:2},
+    {t:"崩壊・倒壊", s:"建込み中の型枠の倒れ、打設圧による破壊（はらみ）", m:"控え・サポートを確実に／打設速度を管理", sev:10,pos:2,freq:2},
+    {t:"飛来・落下", s:"セパ・端太・工具の落下", m:"上下作業を避ける／整理整頓・足元の片付け", sev:6,pos:2,freq:2},
+    {t:"墜落・転落", s:"高い型枠上での作業", m:"作業床・手すりを設置／安全帯", sev:6,pos:2,freq:2}
+  ],
+  "コンクリート": [
+    {t:"激突され・はさまれ", s:"生コン車・ポンプ車の配置・移動に巻き込まれ", m:"誘導員配置・立入禁止／アウトリガー確認", sev:10,pos:2,freq:2},
+    {t:"皮膚・眼障害", s:"生コンの強アルカリで皮膚炎・眼の損傷", m:"長靴・ゴム手袋・保護メガネ／洗眼用の水を用意", sev:3,pos:4,freq:4},
+    {t:"墜落・転落", s:"打設時に型枠上で足を滑らせる", m:"足場を確保・安全帯／無理に身を乗り出さない", sev:6,pos:2,freq:2},
+    {t:"腰痛・反動", s:"バイブレータ・ホースの取り回しで無理な力", m:"複数人で取り回す・無理な体勢を避ける", sev:3,pos:2,freq:2}
+  ],
+  "解体": [
+    {t:"崩壊・倒壊", s:"残存部材が想定外の方向に倒れる", m:"倒壊方向と解体順序を事前検討・遵守／残置物を確認", sev:10,pos:4,freq:2},
+    {t:"激突され・はさまれ", s:"解体機(重機)の旋回・アタッチメントに接触", m:"旋回範囲を立入禁止・誘導／風と残存部材の状態を確認", sev:10,pos:4,freq:2},
+    {t:"健康障害(粉じん)", s:"アスベスト・粉じんの吸入", m:"事前調査(法令義務)・湿潤化／防じんマスク・有資格者対応", sev:6,pos:2,freq:2},
+    {t:"飛来・落下", s:"上階からの落下物・はつり片の飛散", m:"養生シート・防護メガネ／下部の立入禁止", sev:6,pos:4,freq:4}
+  ],
+  "内装(CFシート)": [
+    {t:"健康障害(中毒)", s:"接着剤・溶剤の有機溶剤/VOCを吸い気分不良", m:"窓開け・換気扇で換気／有機溶剤用マスク", sev:3,pos:4,freq:4},
+    {t:"火災", s:"溶剤・接着剤が火気・静電気で引火", m:"火気厳禁・SDS確認／換気で蒸気をためない", sev:10,pos:1,freq:2},
+    {t:"切れ", s:"カッターでの裁断時に手を切る", m:"刃は手前に引かない・替刃をこまめに／定規ガード", sev:3,pos:4,freq:4},
+    {t:"腰痛・膝", s:"床の長時間しゃがみ作業", m:"膝当てを使う・姿勢を交代", sev:1,pos:4,freq:4}
+  ],
+  "外構・擁壁": [
+    {t:"崩壊・倒壊", s:"擁壁の高いのり面・掘削面の崩れ", m:"段階掘削・土留め／勾配を管理し点検", sev:10,pos:2,freq:2},
+    {t:"激突され(第三者)", s:"公道・歩行者・通行車との接触", m:"仮囲い・交通誘導員／第三者の動線を確認", sev:10,pos:2,freq:2},
+    {t:"熱中症", s:"屋外・夏季の長時間作業で熱中症", m:"WBGT確認・こまめな休憩と水分塩分／巡視・声掛け", sev:6,pos:4,freq:4},
+    {t:"墜落・転落", s:"擁壁天端・足場からの転落", m:"端部養生・手すり／安全帯", sev:6,pos:2,freq:2}
+  ]
+};
+
+const TRADES = Object.keys(DB);
+const $ = s => document.querySelector(s);
+
+/* 工種チップ生成 */
+const sel = new Set();
+const chipsEl = $("#trades");
+TRADES.forEach(t=>{
+  const c=document.createElement("div");
+  c.className="chip";c.textContent=t;
+  c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?sel.add(t):sel.delete(t);};
+  chipsEl.appendChild(c);
+});
+
+/* 日付デフォルト=今日 */
+(function(){
+  const d=new Date();
+  const z=n=>String(n).padStart(2,"0");
+  $("#day").value=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+})();
+
+function rank(p){ if(p>=13)return["Ⅴ","b5"];if(p>=9)return["Ⅳ","b4"];if(p>=6)return["Ⅲ","b3"];if(p>=3)return["Ⅱ","b2"];return["Ⅰ","b1"];}
+function fmtDate(v){const d=new Date(v+"T00:00");const w=["日","月","火","水","木","金","土"][d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()}(${w})`;}
+
+$("#gen").onclick=()=>{
+  if(sel.size===0){alert("工種を1つ以上選んでください。");return;}
+  const site=$("#site").value.trim()||"（現場名未入力）";
+  const dateStr=fmtDate($("#day").value);
+  const weather=$("#weather").value;
+  const worker=$("#worker").value.trim();
+  const work=$("#work").value.trim();
+
+  // 選択工種の危険を集約しリスク点で降順
+  let hz=[];
+  sel.forEach(t=>DB[t].forEach(h=>hz.push({...h,trade:t,pt:h.sev+h.pos+h.freq})));
+  hz.sort((a,b)=>b.pt-a.pt);
+  const top = hz.slice(0,6); // 上位6件
+  const topFocus = top[0];
+
+  // KYシート描画
+  $("#kyMeta").innerHTML=`現場：<b>${site}</b>　${dateStr}　天候：${weather}${worker?`　作業者：${worker}`:""}<br>`+
+    `工種：${[...sel].join("・")}${work?`<br>作業：${work}`:""}`;
+  $("#hazards").innerHTML=top.map((h,i)=>{
+    const[r,cls]=rank(h.pt);
+    return `<div class="hz">
+      <div class="top"><span class="badge ${cls}">リスク ${r}（${h.pt}）</span>
+      <span class="tag">${h.t}</span><span class="tag">${h.trade}</span></div>
+      <div class="scene">${i+1}. ${h.s}</div>
+      <div class="measure"><b>私はこうする：</b>${h.m}</div></div>`;
+  }).join("");
+  const[fr]=rank(topFocus.pt);
+  $("#focus").innerHTML=`★ 今日の最重点（リスク${fr}）：${topFocus.s}<br>→ ${topFocus.m}`;
+
+  // 朝礼メッセージ
+  const top3=top.slice(0,3);
+  const heat=[...sel].some(t=>["土工事・掘削","外構・擁壁","コンクリート","解体"].includes(t));
+  const asarei =
+`【${dateStr} 朝礼安全】${site}
+本日の作業：${work||[...sel].join("・")}
+
+◆今日の重点（守ること）
+${top3.map((h,i)=>` ${i+1}. ${h.m}`).join("\n")}
+${heat?"\n◆暑さ対策：こまめに水分・塩分・休憩を取る":""}
+
+無事故無災害でいきましょう。`;
+  $("#asarei").value=asarei;
+
+  // LINE用
+  const line =
+`【${dateStr} 朝礼安全】${site}
+━━━━━━━━━
+🏗 本日：${work||[...sel].join("・")}
+⚠ 今日の重点
+${top3.map((h,i)=>` ${["①","②","③"][i]} ${h.m}`).join("\n")}${heat?"\n🌡 暑さ対策：水分・塩分・休憩を":""}
+✅ 指差呼称ヨシ！ 体調管理ヨシ！
+━━━━━━━━━
+無事故無災害でいきましょう💪`;
+  $("#lineout").value=line;
+
+  $("#inputCard").classList.add("hidden");
+  $("#output").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+/* コピー */
+document.querySelectorAll(".copy").forEach(b=>{
+  b.onclick=async()=>{
+    const ta=$("#"+b.dataset.target);
+    try{await navigator.clipboard.writeText(ta.value);}
+    catch(e){ta.removeAttribute("readonly");ta.select();document.execCommand("copy");ta.setAttribute("readonly","");}
+    const o=b.textContent;b.textContent="コピー済 ✓";b.classList.add("done");
+    setTimeout(()=>{b.textContent=o;b.classList.remove("done");},1600);
+  };
+});
+
+$("#back").onclick=()=>{
+  $("#output").classList.add("hidden");
+  $("#inputCard").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+</script>
+</body>
+</html>
