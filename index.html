@@ -35,6 +35,10 @@
   .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-size:14px;cursor:pointer;user-select:none;transition:.15s;font-weight:600}
   .chip:hover{border-color:var(--navy2)}
   .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip.cond.on{background:#0f766e;border-color:#0f766e}
+  #condbox{background:#ecfdf5;border:1.5px solid #0f766e;border-radius:10px;padding:10px 12px;margin:0 0 14px}
+  .condttl{font-weight:800;color:#0f766e;font-size:14px;margin-bottom:4px}
+  .condrow{font-size:14px;color:#134e4a}
   .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
   .btn-primary:active{transform:translateY(1px)}
@@ -92,6 +96,9 @@
     <div class="step" style="margin-top:16px"><span class="n">2</span>今日の工種（複数可）</div>
     <div class="chips" id="trades"></div>
 
+    <label style="margin-top:14px">現場の状況（あてはまれば選択／公社・団地など）</label>
+    <div class="chips" id="conds"></div>
+
     <div class="step" style="margin-top:16px"><span class="n">3</span>今日の作業内容</div>
     <textarea id="work" placeholder="例）基礎の型枠建込みと配筋。バックホウで残土搬出。"></textarea>
     <div class="hint">具体的に書くほど、ぴったりの危険ポイントが選ばれます。</div>
@@ -106,6 +113,7 @@
       <div class="meta" id="kyMeta"></div>
       <div id="hazards"></div>
       <div class="focus" id="focus"></div>
+      <div id="condbox" style="display:none"></div>
       <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--sub)">
         <span>指差呼称</span><b style="color:var(--navy)">ヨシ！</b>
         <span style="margin-left:auto">体調： 良 ・ 注意</span>
@@ -189,6 +197,48 @@ const DB = {
     {t:"激突され(第三者)", s:"公道・歩行者・通行車との接触", m:"仮囲い・交通誘導員／第三者の動線を確認", sev:10,pos:2,freq:2},
     {t:"熱中症", s:"屋外・夏季の長時間作業で熱中症", m:"WBGT確認・こまめな休憩と水分塩分／巡視・声掛け", sev:6,pos:4,freq:4},
     {t:"墜落・転落", s:"擁壁天端・足場からの転落", m:"端部養生・手すり／安全帯", sev:6,pos:2,freq:2}
+  ],
+  /* ===== 公社・団地 保全/修繕 系 ===== */
+  "内装(クロス・襖・畳)": [
+    {t:"墜落・転落", s:"脚立・足場板での天井クロス貼り等の高所作業で転落", m:"脚立は天板に乗らない・3点支持／脚立はロック確認／開口・段差に注意", sev:6,pos:4,freq:4},
+    {t:"切れ", s:"カッターでのクロス・建材の裁断で手を切る", m:"刃は手前に引かない・替刃をこまめに／定規ガード・保護手袋", sev:3,pos:4,freq:4},
+    {t:"健康障害", s:"接着剤・糊・カビ取り剤で皮膚炎・気分不良", m:"換気／手袋・保護メガネ／薬品を混ぜない・SDS確認", sev:3,pos:2,freq:2},
+    {t:"腰痛・反動", s:"畳・建材の運搬や上向き・中腰作業の繰り返し", m:"2人で運ぶ・台車／姿勢を交代し休憩", sev:3,pos:4,freq:4}
+  ],
+  "室内塗装(EP)": [
+    {t:"健康障害(中毒)", s:"塗料・シンナー・プライマーの有機溶剤で頭痛・気分不良", m:"窓開け・換気扇で強制換気／有機溶剤用マスク・手袋", sev:6,pos:4,freq:4},
+    {t:"火災", s:"溶剤・ウエスが火気や静電気で引火", m:"火気厳禁・喫煙禁止／ウエスは密閉処理・換気", sev:10,pos:1,freq:2},
+    {t:"墜落・転落", s:"脚立・足場での高所塗装中の転落", m:"脚立3点支持・天板に乗らない／足場は手すり", sev:6,pos:2,freq:4},
+    {t:"眼・皮膚障害", s:"塗料の飛散・はね返りで眼や皮膚を傷める", m:"保護メガネ・手袋／上向き作業は特に注意", sev:3,pos:2,freq:2}
+  ],
+  "設備(給排水・電気)": [
+    {t:"感電", s:"既設配線・コンセント・照明・換気扇の通電部に触れる", m:"作業前にブレーカーを切り検電／濡れ手で触らない・絶縁工具", sev:10,pos:2,freq:2},
+    {t:"漏水・やけど", s:"給排水・給湯配管からの漏水、給湯機高温部でやけど", m:"止水栓を閉める／湯を落としてから／養生・受けを用意", sev:3,pos:4,freq:2},
+    {t:"はさまれ・切れ", s:"工具・金物・配管端部で手を負傷", m:"保護手袋／工具を正しく使う・刃を管理", sev:3,pos:4,freq:4},
+    {t:"腰痛", s:"便器・給湯機など重量設備の取外し・据付", m:"2人で持つ・台車／無理な姿勢を避ける", sev:3,pos:4,freq:2}
+  ],
+  "防水(ベランダ・屋上)": [
+    {t:"墜落・転落", s:"ベランダ手すり越し・屋上端部・パラペットからの転落", m:"安全帯を親綱に／端部に近づかない・身を乗り出さない", sev:10,pos:2,freq:4},
+    {t:"健康障害・火災", s:"ウレタン・FRP・プライマーの有機溶剤の吸入・引火", m:"換気／有機溶剤用マスク・手袋／火気厳禁・ウエス密閉", sev:6,pos:2,freq:2},
+    {t:"転倒・すべり", s:"濡れ面・防水材で足を滑らせる", m:"滑り止め靴／こぼれた材はすぐ拭く・足元確認", sev:3,pos:4,freq:4},
+    {t:"熱中症", s:"屋上・ベランダの日射と照り返しで熱中症", m:"WBGT確認・休憩と水分塩分／単独作業は連絡を確保", sev:6,pos:4,freq:4}
+  ],
+  "外部・高所補修": [
+    {t:"墜落・転落", s:"外部階段・雨水管・庇など高所の補修中の転落", m:"安全帯・親綱／足場・脚立は固定し3点支持／開口端部を養生", sev:10,pos:4,freq:4},
+    {t:"飛来・落下", s:"はつり片・工具・材料が下の通路へ落下し第三者に当たる", m:"下部を立入禁止・養生／工具に落下防止紐／通行者の動線確認", sev:6,pos:4,freq:4},
+    {t:"粉じん・振動", s:"モルタル・コンクリートのはつりで粉じん吸入・手のしびれ", m:"防じんマスク・保護メガネ／湿潤化／防振手袋・小まめに休憩", sev:3,pos:4,freq:4},
+    {t:"切れ・反発", s:"サンダー・ディスクグラインダーの反発・接触", m:"カバー・保護メガネ／キックバックに注意ししっかり保持", sev:6,pos:2,freq:4}
+  ],
+  "清掃・残置撤去": [
+    {t:"切れ・刺さり・衛生", s:"残置物中のガラス・刃物・針・汚物で受傷や感染", m:"厚手手袋・長靴／中身を確認してから掴む・分別／鋭利物は箱へ", sev:3,pos:4,freq:4},
+    {t:"腰痛・はさまれ", s:"家具・家電・残置物の運び出しで腰痛・指はさみ", m:"2人運搬・台車／重い物は分解・無理しない", sev:3,pos:4,freq:4},
+    {t:"健康障害", s:"洗剤・カビ取り剤の混触や吸入、ホコリ・カビ", m:"換気・手袋・マスク／塩素系と酸性を混ぜない", sev:6,pos:2,freq:4},
+    {t:"激突され・交通", s:"残置物・産廃の積込み・運搬時の車両事故", m:"積載確認・固縛／後退時は誘導・周囲確認／マニフェスト携行", sev:6,pos:2,freq:2}
+  ],
+  "調査・点検": [
+    {t:"墜落・転落", s:"屋上・ベランダ・高所の点検中の転落、脚立使用", m:"端部に近づきすぎない・安全帯／脚立は3点支持", sev:6,pos:2,freq:2},
+    {t:"転倒", s:"団地内の階段昇降・移動中の踏み外し", m:"手すりを持つ・足元確認／手をふさがない", sev:3,pos:2,freq:4},
+    {t:"第三者・トラブル", s:"居住者・通行人との接触、私物・植栽の破損", m:"挨拶・声掛け／私物に触れない・動線を確保", sev:3,pos:2,freq:2}
   ]
 };
 
@@ -203,6 +253,22 @@ TRADES.forEach(t=>{
   c.className="chip";c.textContent=t;
   c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?sel.add(t):sel.delete(t);};
   chipsEl.appendChild(c);
+});
+
+/* 現場の状況（条件）— 公社・団地修繕で多い注意 */
+const CONDS=[
+  {k:"居住中の団地・第三者あり", m:"居住者・通行人（子ども/高齢者）の動線を確保。立入禁止・養生・声掛けを徹底"},
+  {k:"在宅(入居中)で作業", m:"家財・私物を養生して傷つけない。火気・におい・騒音・施錠に配慮し声掛け"},
+  {k:"1人作業", m:"単独作業。開始/終了を事務所へ連絡し携帯で連絡確保。無理な高所・重量作業はしない"},
+  {k:"古い建物・アスベスト懸念", m:"古い建材(Pタイル/ボード/吹付け)はアスベストの可能性。事前調査を確認し不明なら破砕・はつりをしない"}
+];
+const selCond=new Set();
+const condsEl=$("#conds");
+CONDS.forEach(o=>{
+  const c=document.createElement("div");
+  c.className="chip cond";c.textContent=o.k;
+  c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?selCond.add(o):selCond.delete(o);};
+  condsEl.appendChild(c);
 });
 
 /* 日付デフォルト=今日 */
@@ -245,27 +311,36 @@ $("#gen").onclick=()=>{
   const[fr]=rank(topFocus.pt);
   $("#focus").innerHTML=`★ 今日の最重点（リスク${fr}）：${topFocus.s}<br>→ ${topFocus.m}`;
 
+  // 現場の状況（条件）からの注意
+  const condLines=[...selCond].map(c=>c.m);
+  const cb=$("#condbox");
+  if(condLines.length){
+    cb.style.display="block";
+    cb.innerHTML=`<div class="condttl">📍 現場の注意</div>`+condLines.map(m=>`<div class="condrow">・${m}</div>`).join("");
+  }else{ cb.style.display="none"; cb.innerHTML=""; }
+
   // 朝礼メッセージ
   const top3=top.slice(0,3);
-  const heat=[...sel].some(t=>["土工事・掘削","外構・擁壁","コンクリート","解体"].includes(t));
+  const heat=[...sel].some(t=>["土工事・掘削","外構・擁壁","コンクリート","解体","防水(ベランダ・屋上)","外部・高所補修"].includes(t));
+  const condBlock=condLines.length?`\n\n◆現場の注意\n`+condLines.map(m=>` ・${m}`).join("\n"):"";
   const asarei =
 `【${dateStr} 朝礼安全】${site}
 本日の作業：${work||[...sel].join("・")}
 
 ◆今日の重点（守ること）
-${top3.map((h,i)=>` ${i+1}. ${h.m}`).join("\n")}
-${heat?"\n◆暑さ対策：こまめに水分・塩分・休憩を取る":""}
+${top3.map((h,i)=>` ${i+1}. ${h.m}`).join("\n")}${condBlock}${heat?"\n\n◆暑さ対策：こまめに水分・塩分・休憩を取る":""}
 
 無事故無災害でいきましょう。`;
   $("#asarei").value=asarei;
 
   // LINE用
+  const condBlockL=condLines.length?`\n📍 現場の注意\n`+condLines.map(m=>` ・${m}`).join("\n"):"";
   const line =
 `【${dateStr} 朝礼安全】${site}
 ━━━━━━━━━
 🏗 本日：${work||[...sel].join("・")}
 ⚠ 今日の重点
-${top3.map((h,i)=>` ${["①","②","③"][i]} ${h.m}`).join("\n")}${heat?"\n🌡 暑さ対策：水分・塩分・休憩を":""}
+${top3.map((h,i)=>` ${["①","②","③"][i]} ${h.m}`).join("\n")}${condBlockL}${heat?"\n🌡 暑さ対策：水分・塩分・休憩を":""}
 ✅ 指差呼称ヨシ！ 体調管理ヨシ！
 ━━━━━━━━━
 無事故無災害でいきましょう💪`;
