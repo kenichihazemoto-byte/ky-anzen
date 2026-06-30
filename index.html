@@ -51,6 +51,7 @@
   .chip.furi.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
   ruby{ruby-align:center}
   ruby rt{font-size:10px;color:#0369a1;font-weight:700;padding:0 2px}
+  .tr{font-size:13px;color:#0369a1;font-weight:600;margin:2px 0 4px;line-height:1.5}
   .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
   .btn-primary:active{transform:translateY(1px)}
@@ -584,6 +585,35 @@ const TERMS=[
   ["監視人","かんしにん","Người giám sát","Pengawas"],
   ["測定","そくてい","Đo khí","Pengukuran gas"],
   ["合図","あいず","Ra hiệu","Aba-aba"],
+  ["漏電遮断器","ろうでんしゃだんき","Cầu dao chống giật (ELCB)","Pemutus arus bocor (ELCB)"],
+  ["消火器","しょうかき","Bình chữa cháy","Pemadam api (APAR)"],
+  ["介錯ロープ","かいしゃくろーぷ","Dây dẫn hướng tải","Tali pemandu beban"],
+  ["アウトリガー","あうとりがー","Chân chống máy","Kaki penyangga (outrigger)"],
+  ["架空電線","かくうでんせん","Dây điện trên không","Kabel listrik di atas"],
+  ["定格荷重","ていかくかじゅう","Tải trọng định mức","Beban nominal"],
+  ["安全靴","あんぜんぐつ","Giày bảo hộ","Sepatu safety"],
+  ["長靴","ながぐつ","Ủng cao su","Sepatu bot karet"],
+  ["耳栓","みみせん","Nút bịt tai","Penyumbat telinga"],
+  ["替刃","かえば","Lưỡi dao thay","Mata pisau pengganti"],
+  ["結束線","けっそくせん","Dây buộc thép","Kawat ikat"],
+  ["差し筋","さしきん","Thép chờ","Besi tunggu"],
+  ["歩み板","あゆみいた","Tấm ván đi","Papan pijakan"],
+  ["土留め","どどめ","Chống vách đất","Penahan tanah"],
+  ["勾配","こうばい","Độ dốc","Kemiringan"],
+  ["はつり","はつり","Đục phá bê tông","Pembobokan beton"],
+  ["サンダー","さんだー","Máy mài","Gerinda"],
+  ["グラインダー","ぐらいんだー","Máy mài","Gerinda"],
+  ["キックバック","きっくばっく","Giật ngược","Tendangan balik (kickback)"],
+  ["バイブレータ","ばいぶれーた","Đầm dùi bê tông","Vibrator beton"],
+  ["締固め","しめがため","Đầm chặt","Pemadatan"],
+  ["湿潤化","しつじゅんか","Làm ẩm","Pembasahan"],
+  ["隔離","かくり","Cách ly khu vực","Isolasi area"],
+  ["退避","たいひ","Lánh nạn","Evakuasi"],
+  ["火の番","ひのばん","Người canh lửa","Penjaga api"],
+  ["日陰","ひかげ","Bóng râm","Tempat teduh"],
+  ["申告","しんこく","Khai báo","Lapor"],
+  ["連絡","れんらく","Liên lạc","Hubungi/lapor"],
+  ["事務所","じむしょ","Văn phòng","Kantor"],
   ["墜落","ついらく","Ngã từ trên cao","Jatuh dari ketinggian"],
   ["転落","てんらく","Ngã/rơi","Terjatuh"],
   ["転倒","てんとう","Vấp ngã","Tersandung"],
@@ -658,6 +688,33 @@ const TERM_MAP=Object.fromEntries(TERMS.map(t=>[t[0],{kana:t[1],vi:t[2],id:t[3]}
 function ruby(s){
   if(LANG==="off"||!s) return s;
   return String(s).replace(TERM_RE,w=>{ const v=(TERM_MAP[w]||{})[LANG]; return v?`<ruby>${w}<rt>${v}</rt></ruby>`:w; });
+}
+/* 頻出文の全訳（現場の状況/体調/ワンポイント/熱中症対策）。VI/IDで日本語の下に全文訳を表示 */
+const SENT={
+"居住者・通行人（子ども/高齢者）の動線を確保。立入禁止・養生・声掛けを徹底":{vi:"Đảm bảo lối đi cho cư dân và người qua đường (trẻ em/người già). Rào cấm vào, che chắn và luôn lên tiếng cảnh báo.",id:"Pastikan jalur penghuni & pejalan kaki (anak/lansia). Pasang larangan masuk, pelindung, dan selalu beri aba-aba."},
+"家財・私物を養生して傷つけない。火気・におい・騒音・施錠に配慮し声掛け":{vi:"Che chắn đồ đạc, tài sản của khách, không làm hỏng. Chú ý lửa, mùi, tiếng ồn, khóa cửa và lên tiếng thông báo.",id:"Lindungi perabot & barang pribadi agar tidak rusak. Perhatikan api, bau, kebisingan, kunci pintu, dan beri info."},
+"単独作業。開始/終了を事務所へ連絡し携帯で連絡確保。無理な高所・重量作業はしない":{vi:"Làm việc một mình. Báo bắt đầu/kết thúc cho văn phòng, luôn giữ liên lạc qua điện thoại. Không làm việc trên cao hay vật nặng quá sức.",id:"Kerja sendirian. Laporkan mulai/selesai ke kantor, tetap bisa dihubungi via HP. Jangan kerja di ketinggian/beban berat yang berisiko."},
+"古い建材(Pタイル/ボード/吹付け)はアスベストの可能性。事前調査を確認し不明なら破砕・はつりをしない":{vi:"Vật liệu cũ (gạch P, tấm, lớp phun) có thể chứa amiăng. Kiểm tra khảo sát trước; nếu không rõ, không đập/đục.",id:"Material lama (ubin P, papan, semprotan) bisa mengandung asbes. Cek survei awal; jika tidak jelas, jangan pecahkan/bobok."},
+"寝不足。注意力の低下に注意。高所・重機作業は特に慎重に":{vi:"Thiếu ngủ. Chú ý giảm tập trung. Đặc biệt cẩn thận khi làm trên cao/máy móc nặng.",id:"Kurang tidur. Hati-hati konsentrasi menurun. Ekstra waspada saat kerja di ketinggian/alat berat."},
+"飲酒の影響。ふらつき・判断低下に注意。つらければ申告し軽作業へ":{vi:"Ảnh hưởng rượu bia. Chú ý chóng mặt, giảm phán đoán. Nếu mệt, hãy báo và làm việc nhẹ.",id:"Pengaruh alkohol. Hati-hati limbung & penilaian menurun. Jika tidak enak badan, lapor dan kerja ringan."},
+"発熱・不調。無理せず申告。高温下は熱中症リスク大、こまめに休憩":{vi:"Sốt/mệt. Đừng cố, hãy báo. Trời nóng dễ sốc nhiệt, nghỉ giải lao thường xuyên.",id:"Demam/tidak fit. Jangan paksakan, lapor. Saat panas risiko sengatan panas tinggi, sering istirahat."},
+"痛み・持病あり。無理な姿勢・重量物を避け、悪化したら申告":{vi:"Có đau/bệnh nền. Tránh tư thế gắng sức và vật nặng; nếu nặng hơn hãy báo.",id:"Ada nyeri/penyakit bawaan. Hindari posisi memaksa & beban berat; jika memburuk, lapor."},
+"指差呼称『ヨシ！』を声に出して確認":{vi:"Chỉ tay hô to 'OK!' để xác nhận.",id:"Tunjuk dan sebut 'OK!' dengan suara untuk memastikan."},
+"整理整頓・足元の片付け（4S）でつまずき・転倒を防ぐ":{vi:"Dọn dẹp gọn gàng, sạch chỗ đứng (4S) để tránh vấp ngã.",id:"Rapikan & bersihkan area kaki (4S) untuk cegah tersandung."},
+"KYは形だけにしない。今日の自分の作業に当てはめて考える":{vi:"KY không làm cho có. Hãy áp dụng vào công việc của mình hôm nay.",id:"KY jangan formalitas. Terapkan pada pekerjaan Anda hari ini."},
+"『おかしい』と思ったら一度止まる・人を呼ぶ":{vi:"Thấy 'bất thường' thì dừng lại, gọi người.",id:"Jika merasa 'ada yang aneh', berhenti dan panggil orang."},
+"保護具（ヘルメット・安全帯・手袋・保護メガネ）を点検する":{vi:"Kiểm tra đồ bảo hộ (mũ, dây an toàn, găng tay, kính).",id:"Periksa APD (helm, sabuk pengaman, sarung tangan, kacamata)."},
+"無理な体勢・近道行動をしない。手順どおりに":{vi:"Không gắng sức hay đi tắt. Làm đúng quy trình.",id:"Jangan posisi memaksa atau ambil jalan pintas. Ikuti prosedur."},
+"合図・声掛けを徹底。重機・上下作業は特に":{vi:"Luôn ra hiệu và lên tiếng. Đặc biệt khi có máy/làm trên dưới.",id:"Selalu beri aba-aba & info. Terutama alat berat/kerja atas-bawah."},
+"水分・休憩を自分から取る。体調を仲間と確認し合う":{vi:"Chủ động uống nước, nghỉ ngơi. Cùng đồng nghiệp kiểm tra sức khỏe.",id:"Aktif minum & istirahat. Saling cek kondisi dengan rekan."},
+"原則 作業中止/見直し。日陰で頻繁に休憩し20〜30分ごとに給水":{vi:"Về nguyên tắc dừng/xem lại công việc. Nghỉ trong bóng râm thường xuyên, uống nước mỗi 20-30 phút.",id:"Pada dasarnya hentikan/tinjau pekerjaan. Sering istirahat di tempat teduh, minum tiap 20-30 menit."},
+"激しい作業は避け30分ごとに給水・休憩。単独作業は声掛け確認":{vi:"Tránh việc nặng, uống nước & nghỉ mỗi 30 phút. Làm một mình phải kiểm tra liên lạc.",id:"Hindari kerja berat, minum & istirahat tiap 30 menit. Kerja sendiri pastikan saling cek."},
+"こまめに給水（30分ごと目安）、休憩を多めに取る":{vi:"Uống nước thường xuyên (khoảng mỗi 30 phút), nghỉ nhiều hơn.",id:"Sering minum (kira-kira tiap 30 menit), perbanyak istirahat."},
+"水分補給を意識し、体調変化に注意する":{vi:"Chú ý uống nước, để ý thay đổi sức khỏe.",id:"Sadar untuk minum air, perhatikan perubahan kondisi tubuh."}
+};
+function withTr(jp){
+  if((LANG==="vi"||LANG==="id") && SENT[jp]) return jp+`<div class="tr">🌐 ${SENT[jp][LANG]}</div>`;
+  return ruby(jp);
 }
 document.querySelectorAll("#langRow .chip").forEach(c=>{
   c.onclick=()=>{
@@ -997,14 +1054,14 @@ $("#gen").onclick=()=>{
   const showHeat = h.lv>=3 || (h.lv>=2 && outdoor);
   if(showHeat){
     hb.style.display="block"; hb.style.background=h.bg; hb.style.color=h.col; hb.style.border=`1.5px solid ${h.col}`;
-    hb.innerHTML=`🌡 ${ruby("熱中症")}【${h.label}】体感${feel}℃　${ruby(h.advice)}${h.lv>=4?"<br>※のどが渇く前に給水。少しでも不調なら申告し日陰で休む":""}`;
+    hb.innerHTML=`🌡 ${ruby("熱中症")}【${h.label}】体感${feel}℃　${withTr(h.advice)}${h.lv>=4?"<br>※のどが渇く前に給水。少しでも不調なら申告し日陰で休む":""}`;
     $("#waterCard").style.display = h.lv>=3 ? "block":"none";
   }else{ hb.style.display="none"; $("#waterCard").style.display="none"; }
 
   // 現場の注意
   const condLines=[...selCond].map(c=>c.m);
   const cb=$("#condbox");
-  if(condLines.length){cb.style.display="block";cb.innerHTML=`<div class="condttl">📍 現場の注意</div>`+condLines.map(m=>`<div class="condrow">・${ruby(m)}</div>`).join("");}
+  if(condLines.length){cb.style.display="block";cb.innerHTML=`<div class="condttl">📍 現場の注意</div>`+condLines.map(m=>`<div class="condrow">・${withTr(m)}</div>`).join("");}
   else{cb.style.display="none";}
 
   // 今日の体調
@@ -1013,7 +1070,7 @@ $("#gen").onclick=()=>{
   if(healthLines.length){
     hbx.style.display="block";
     hbx.style.cssText="display:block;background:#fef2f2;color:#7f1d1d;border:1.5px solid #c0392b;border-radius:10px;padding:10px 12px;margin:0 0 14px;font-weight:700;font-size:14px";
-    hbx.innerHTML=`🩺 今日の体調 注意<br>`+healthLines.map(m=>`・${ruby(m)}`).join("<br>");
+    hbx.innerHTML=`🩺 今日の体調 注意`+healthLines.map(m=>`<div>・${withTr(m)}</div>`).join("");
   }else{ hbx.style.display="none"; }
 
   // 関連ヒヤリハット（同じ工種）
@@ -1035,7 +1092,7 @@ $("#gen").onclick=()=>{
 
   // 日替わりワンポイント
   const tip=TIPS[di%TIPS.length];
-  $("#tipbox").innerHTML=`<div style="background:#f0fdfa;border:1.5px solid #0f766e;border-radius:10px;padding:10px 12px;margin:6px 0 0;font-size:14px;color:#134e4a"><b>💡 今日のワンポイント：</b>${ruby(tip)}</div>`;
+  $("#tipbox").innerHTML=`<div style="background:#f0fdfa;border:1.5px solid #0f766e;border-radius:10px;padding:10px 12px;margin:6px 0 0;font-size:14px;color:#134e4a"><b>💡 今日のワンポイント：</b>${withTr(tip)}</div>`;
 
   // 朝礼・LINE
   const top3=top.slice(0,3);
