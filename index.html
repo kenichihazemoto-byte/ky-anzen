@@ -199,8 +199,10 @@
         <div class="hint">コピー後、現場のLINEグループに貼り付けて送信してください。</div>
       </div>
 
-      <div class="row no-print">
-        <button class="btn btn-primary" id="save">💾 この記録を保存</button>
+      <button class="btn btn-teal no-print" id="submitCompany" style="margin-top:6px">🏢 会社へ提出（記録を送信）</button>
+      <div class="hint no-print" id="submitStatus" style="text-align:center"></div>
+      <div class="row no-print" style="margin-top:6px">
+        <button class="btn btn-primary" id="save">💾 端末に保存</button>
         <button class="btn btn-sub" onclick="window.print()">🖨 印刷/PDF</button>
       </div>
       <button class="btn btn-sub no-print" id="back" style="margin-top:8px">↩ 入力に戻る</button>
@@ -985,6 +987,29 @@ $("#save").onclick=()=>{
   if(!lastRecord) return;
   const arr=load(LS_REC); arr.push(lastRecord); save(LS_REC,arr);
   $("#save").textContent="✓ 保存しました（記録タブで確認）";
+};
+
+/* ===== 会社へ提出（中央集約：Googleスプレッドシート）===== */
+const SUBMIT_URL="https://script.google.com/macros/s/AKfycbx7di-lT7O7_wlkT03YfsngoTzK1cdvoFtJzHxHXh20oL53HUSkccSgoZ0q_yqQcuDp/exec";
+$("#submitCompany").onclick=async()=>{
+  if(!lastRecord){ alert("先に安全シートを作成してください。"); return; }
+  const btn=$("#submitCompany"), st=$("#submitStatus");
+  const payload={
+    date:lastRecord.dateStr, site:lastRecord.site, category:lastRecord.category,
+    trades:lastRecord.trades, worker:lastRecord.worker, place:lastRecord.place,
+    height:lastRecord.height, focus:lastRecord.focus, focusRank:rank(lastRecord.focusPt)[0],
+    temp:lastRecord.temp, conds:lastRecord.conds, health:lastRecord.health, work:lastRecord.work
+  };
+  btn.textContent="送信中…"; st.textContent="";
+  try{
+    await fetch(SUBMIT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    btn.textContent="✓ 会社へ提出しました";
+    st.textContent="会社のスプレッドシートに追加しました。";
+    const arr=load(LS_REC); arr.push(lastRecord); save(LS_REC,arr); // 端末にも保存
+  }catch(e){
+    btn.textContent="🏢 会社へ提出（記録を送信）";
+    st.textContent="送信に失敗しました。電波（オンライン）を確認して、もう一度お試しください。";
+  }
 };
 
 /* ===== 給水タイマー ===== */
