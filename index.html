@@ -49,7 +49,8 @@
   .chip.pl.on{background:#0369a1;border-color:#0369a1}
   .chip.ht.on{background:#b45309;border-color:#b45309}
   .chip.furi.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
-  ruby rt{font-size:9px;color:#64748b;font-weight:600}
+  ruby{ruby-align:center}
+  ruby rt{font-size:10px;color:#0369a1;font-weight:700;padding:0 2px}
   .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
   .btn-primary:active{transform:translateY(1px)}
@@ -147,9 +148,13 @@
       <textarea id="work" placeholder="例）基礎の型枠建込みと配筋。バックホウで残土搬出。"></textarea>
       <div class="hint">具体的に書くほど、ぴったりの危険ポイントが選ばれます。</div>
 
-      <label style="margin-top:14px">表示オプション</label>
-      <div class="chips"><div class="chip furi" id="furiChip">あ ふりがな</div></div>
-      <div class="hint">外国人の方など向け。切り替えたら「作成」を押し直してください。</div>
+      <label style="margin-top:14px">表示の補助（読みやすさ・外国人対応）</label>
+      <div class="chips" id="langRow">
+        <div class="chip furi" data-lang="kana">あ ふりがな</div>
+        <div class="chip furi" data-lang="vi">🇻🇳 Tiếng Việt</div>
+        <div class="chip furi" data-lang="id">🇮🇩 Bahasa</div>
+      </div>
+      <div class="hint">日本語はそのまま。選ぶと重要語に「読み／訳」を添えます（職長は日本語で確認できます）。切り替えたら「作成」を押し直してください。</div>
 
       <button class="btn btn-primary" id="gen" style="margin-top:16px">⚡ 安全シートを作成する</button>
     </div>
@@ -547,13 +552,119 @@ Object.keys(HEIGHT).forEach(k=>{
   $("#height").appendChild(c);
 });
 
-/* ===== ふりがな ===== */
-let FURI=false;
-const GLOSSARY=[["高所作業車","こうしょさぎょうしゃ"],["指差呼称","しさこしょう"],["整理整頓","せいりせいとん"],["二次災害","にじさいがい"],["有機溶剤","ゆうきようざい"],["熱中症","ねっちゅうしょう"],["残置物","ざんちぶつ"],["第三者","だいさんしゃ"],["居住者","きょじゅうしゃ"],["通行人","つうこうにん"],["静電気","せいでんき"],["墜落","ついらく"],["転落","てんらく"],["転倒","てんとう"],["感電","かんでん"],["火災","かさい"],["脚立","きゃたつ"],["足場","あしば"],["親綱","おやづな"],["安全帯","あんぜんたい"],["幅木","はばき"],["養生","ようじょう"],["換気","かんき"],["保護","ほご"],["手袋","てぶくろ"],["工具","こうぐ"],["開口","かいこう"],["端部","たんぶ"],["粉じん","ふんじん"],["飛来","ひらい"],["落下","らっか"],["崩壊","ほうかい"],["倒壊","とうかい"],["玉掛け","たまがけ"],["吊荷","つりに"],["誘導","ゆうどう"],["旋回","せんかい"],["重機","じゅうき"],["配線","はいせん"],["検電","けんでん"],["絶縁","ぜつえん"],["給湯","きゅうとう"],["漏水","ろうすい"],["休憩","きゅうけい"],["水分","すいぶん"],["塩分","えんぶん"],["鉄筋","てっきん"],["型枠","かたわく"],["解体","かいたい"],["産廃","さんぱい"],["鋭利","えいり"],["掘削","くっさく"],["擁壁","ようへき"],["塗装","とそう"],["設備","せつび"],["清掃","せいそう"],["点検","てんけん"],["調査","ちょうさ"],["塗料","とりょう"],["手すり","てすり"],["確認","かくにん"],["注意","ちゅうい"],["作業","さぎょう"],["呼吸","こきゅう"],["意識","いしき"]];
-const FURI_RE=new RegExp(GLOSSARY.map(g=>g[0]).join("|"),"g");
-const FURI_MAP=Object.fromEntries(GLOSSARY);
-function ruby(s){ return (FURI&&s)? String(s).replace(FURI_RE,w=>`<ruby>${w}<rt>${FURI_MAP[w]}</rt></ruby>`) : s; }
-$("#furiChip").onclick=()=>{ FURI=!FURI; $("#furiChip").classList.toggle("on",FURI); };
+/* ===== 表示補助：ふりがな / ベトナム語 / インドネシア語（日本語はそのまま残す）=====
+   [日本語, ふりがな, Tiếng Việt, Bahasa Indonesia]。長い語・複合語を先に並べて誤マッチを防止 */
+let LANG="off"; // off | kana | vi | id
+const TERMS=[
+  ["高所作業車","こうしょさぎょうしゃ","Xe nâng người","Truk kerja ketinggian"],
+  ["防じんマスク","ぼうじんますく","Khẩu trang chống bụi","Masker debu"],
+  ["指差呼称","しさこしょう","Chỉ tay hô xác nhận","Tunjuk dan sebut"],
+  ["整理整頓","せいりせいとん","Sắp xếp gọn gàng","Rapikan area (5S)"],
+  ["二次災害","にじさいがい","Tai nạn thứ cấp","Kecelakaan susulan"],
+  ["有機溶剤","ゆうきようざい","Dung môi hữu cơ","Pelarut organik"],
+  ["立入禁止","たちいりきんし","Cấm vào","Dilarang masuk"],
+  ["保護メガネ","ほごめがね","Kính bảo hộ","Kacamata pelindung"],
+  ["アスベスト","あすべすと","Amiăng","Asbes"],
+  ["単独作業","たんどくさぎょう","Làm việc một mình","Kerja sendirian"],
+  ["熱中症","ねっちゅうしょう","Sốc nhiệt","Sengatan panas"],
+  ["残置物","ざんちぶつ","Đồ vật bỏ lại","Barang tertinggal"],
+  ["第三者","だいさんしゃ","Người ngoài","Pihak luar"],
+  ["居住者","きょじゅうしゃ","Cư dân","Penghuni"],
+  ["通行人","つうこうにん","Người qua đường","Pejalan kaki"],
+  ["静電気","せいでんき","Tĩnh điện","Listrik statis"],
+  ["バックホウ","ばっくほう","Máy xúc","Ekskavator"],
+  ["ブレーカー","ぶれーかー","Cầu dao điện","Pemutus arus (MCB)"],
+  ["コンクリート","こんくりーと","Bê tông","Beton"],
+  ["玉掛け","たまがけ","Móc treo tải","Pengikatan beban"],
+  ["吊荷","つりに","Tải treo","Beban gantung"],
+  ["踏み抜き","ふみぬき","Giẫm phải đinh","Tertusuk paku"],
+  ["3点支持","さんてんしじ","Giữ 3 điểm tựa","Tiga titik tumpu"],
+  ["天板","てんばん","Bậc trên cùng thang","Anak tangga teratas"],
+  ["台車","だいしゃ","Xe đẩy","Troli"],
+  ["監視人","かんしにん","Người giám sát","Pengawas"],
+  ["測定","そくてい","Đo khí","Pengukuran gas"],
+  ["合図","あいず","Ra hiệu","Aba-aba"],
+  ["墜落","ついらく","Ngã từ trên cao","Jatuh dari ketinggian"],
+  ["転落","てんらく","Ngã/rơi","Terjatuh"],
+  ["転倒","てんとう","Vấp ngã","Tersandung"],
+  ["感電","かんでん","Điện giật","Tersengat listrik"],
+  ["火災","かさい","Hỏa hoạn","Kebakaran"],
+  ["やけど","やけど","Bỏng","Luka bakar"],
+  ["脚立","きゃたつ","Thang chữ A","Tangga lipat"],
+  ["はしご","はしご","Thang","Tangga"],
+  ["足場","あしば","Giàn giáo","Perancah"],
+  ["親綱","おやづな","Dây cứu sinh","Tali pengaman utama"],
+  ["安全帯","あんぜんたい","Dây an toàn","Sabuk pengaman"],
+  ["フルハーネス","ふるはーねす","Dây đai toàn thân","Harness penuh"],
+  ["幅木","はばき","Tấm chắn chân","Papan pengaman bawah"],
+  ["養生","ようじょう","Che chắn bảo vệ","Pelindung/penutup"],
+  ["換気","かんき","Thông gió","Ventilasi"],
+  ["手袋","てぶくろ","Găng tay","Sarung tangan"],
+  ["マスク","ますく","Khẩu trang","Masker"],
+  ["ヘルメット","へるめっと","Mũ bảo hộ","Helm"],
+  ["工具","こうぐ","Dụng cụ","Perkakas"],
+  ["開口","かいこう","Lỗ mở/miệng hố","Lubang bukaan"],
+  ["端部","たんぶ","Mép/cạnh","Tepi/ujung"],
+  ["粉じん","ふんじん","Bụi","Debu"],
+  ["飛来","ひらい","Vật bay tới","Benda melayang"],
+  ["落下","らっか","Rơi đồ vật","Benda jatuh"],
+  ["崩壊","ほうかい","Sụp đổ","Longsor/runtuh"],
+  ["倒壊","とうかい","Đổ sập","Roboh"],
+  ["誘導","ゆうどう","Người hướng dẫn","Pemandu"],
+  ["旋回","せんかい","Quay/xoay máy","Putaran alat"],
+  ["重機","じゅうき","Máy móc nặng","Alat berat"],
+  ["配線","はいせん","Dây điện","Kabel listrik"],
+  ["検電","けんでん","Kiểm tra điện","Cek tegangan"],
+  ["絶縁","ぜつえん","Cách điện","Isolasi listrik"],
+  ["給湯","きゅうとう","Cấp nước nóng","Pemanas air"],
+  ["漏水","ろうすい","Rò rỉ nước","Kebocoran air"],
+  ["休憩","きゅうけい","Nghỉ giải lao","Istirahat"],
+  ["水分","すいぶん","Uống nước","Minum air"],
+  ["塩分","えんぶん","Muối khoáng","Garam"],
+  ["鉄筋","てっきん","Cốt thép","Besi beton"],
+  ["型枠","かたわく","Ván khuôn","Bekisting"],
+  ["生コン","なまこん","Bê tông tươi","Beton basah"],
+  ["解体","かいたい","Phá dỡ","Pembongkaran"],
+  ["産廃","さんぱい","Rác thải công nghiệp","Limbah industri"],
+  ["鋭利","えいり","Sắc nhọn","Benda tajam"],
+  ["掘削","くっさく","Đào đất","Penggalian"],
+  ["擁壁","ようへき","Tường chắn","Dinding penahan"],
+  ["塗装","とそう","Sơn","Pengecatan"],
+  ["塗料","とりょう","Sơn (vật liệu)","Cat"],
+  ["設備","せつび","Thiết bị","Instalasi"],
+  ["清掃","せいそう","Dọn dẹp","Pembersihan"],
+  ["点検","てんけん","Kiểm tra","Inspeksi"],
+  ["調査","ちょうさ","Khảo sát","Survei"],
+  ["手すり","てすり","Lan can","Pegangan"],
+  ["確認","かくにん","Xác nhận","Periksa"],
+  ["注意","ちゅうい","Chú ý","Hati-hati"],
+  ["呼吸","こきゅう","Hô hấp","Pernapasan"],
+  ["意識","いしき","Ý thức","Kesadaran"],
+  ["石綿","いしわた","Amiăng","Asbes"],
+  ["酸欠","さんけつ","Thiếu oxy","Kekurangan oksigen"],
+  ["火気","かき","Nguồn lửa","Sumber api"],
+  ["溶接","ようせつ","Hàn","Pengelasan"],
+  ["ボンベ","ぼんべ","Bình khí","Tabung gas"],
+  ["丸ノコ","まるのこ","Máy cưa đĩa","Gergaji bundar"],
+  ["カッター","かったー","Dao rọc","Pisau cutter"],
+  ["腰痛","ようつう","Đau lưng","Sakit pinggang"],
+  ["釘","くぎ","Đinh","Paku"],
+  ["刃","は","Lưỡi dao/cưa","Mata pisau"],
+  ["保護","ほご","Bảo hộ","Pelindung"],
+  ["作業","さぎょう","Công việc","Pekerjaan"]
+];
+const TERM_RE=new RegExp(TERMS.map(g=>g[0]).join("|"),"g");
+const TERM_MAP=Object.fromEntries(TERMS.map(t=>[t[0],{kana:t[1],vi:t[2],id:t[3]}]));
+function ruby(s){
+  if(LANG==="off"||!s) return s;
+  return String(s).replace(TERM_RE,w=>{ const v=(TERM_MAP[w]||{})[LANG]; return v?`<ruby>${w}<rt>${v}</rt></ruby>`:w; });
+}
+document.querySelectorAll("#langRow .chip").forEach(c=>{
+  c.onclick=()=>{
+    LANG=(LANG===c.dataset.lang)?"off":c.dataset.lang;
+    document.querySelectorAll("#langRow .chip").forEach(x=>x.classList.toggle("on",x.dataset.lang===LANG));
+  };
+});
 
 /* ===== 作業者 ===== */
 const WORKERS=["ビン","ドン","アンディ","リフキ","イクノ","永井","山口","江口","トーヨーテック","ミロク"];
