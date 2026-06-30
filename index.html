@@ -121,28 +121,29 @@
         <div style="max-width:140px"><label>日付</label><input type="date" id="day" /></div>
       </div>
       <div id="danchiRow" style="display:none"><label style="margin-top:8px">団地（タップで現場名に入力）</label><div class="chips" id="danchi"></div></div>
-      <div class="row" style="margin-top:0">
-        <div style="max-width:140px"><label>天候</label>
-          <select id="weather"><option>晴</option><option>曇</option><option>雨</option><option>雪</option><option>強風</option></select>
-        </div>
-        <div><label>作業者名</label><input type="text" id="worker" placeholder="任意" /></div>
+      <div style="max-width:160px"><label>天候</label>
+        <select id="weather"><option>晴</option><option>曇</option><option>雨</option><option>雪</option><option>強風</option></select>
       </div>
+      <label style="margin-top:12px">作業者（複数可）</label>
+      <div class="chips" id="workers"></div>
+      <div id="workerQty"></div>
+      <input type="text" id="worker" placeholder="その他の作業者（任意）" style="margin-top:8px" />
 
-      <div class="step" style="margin-top:16px"><span class="n">2</span>今日の工種（複数可）</div>
-      <div class="chips" id="trades"></div>
-
-      <label style="margin-top:14px">作業場所（屋内／屋外）</label>
+      <div class="step" style="margin-top:18px"><span class="n">2</span>作業環境（先に選んでください）</div>
+      <label>作業場所（屋内／屋外）</label>
       <div class="chips" id="place"></div>
       <label style="margin-top:10px">高さ・足場（墜落対策の判定に使います）</label>
       <div class="chips" id="height"></div>
-
-      <label style="margin-top:14px">現場の状況（あてはまれば選択）</label>
+      <label style="margin-top:10px">現場の状況（あてはまれば選択）</label>
       <div class="chips" id="conds"></div>
-
-      <label style="margin-top:14px">今日の体調（気になるものを選択）</label>
+      <label style="margin-top:10px">今日の体調（気になるものを選択）</label>
       <div class="chips" id="health"></div>
 
-      <div class="step" style="margin-top:16px"><span class="n">3</span>今日の作業内容</div>
+      <div class="step" style="margin-top:18px"><span class="n">3</span>今日の工種（複数可）</div>
+      <div class="chips" id="trades"></div>
+      <div id="subgenWrap"></div>
+
+      <div class="step" style="margin-top:18px"><span class="n">4</span>今日の作業内容</div>
       <textarea id="work" placeholder="例）基礎の型枠建込みと配筋。バックホウで残土搬出。"></textarea>
       <div class="hint">具体的に書くほど、ぴったりの危険ポイントが選ばれます。</div>
 
@@ -474,11 +475,11 @@ function renderTrades(){
     const c=document.createElement("div");
     c.className="chip"+(sel.has(t)?" on":"");
     c.textContent=t;
-    c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?sel.add(t):sel.delete(t);};
+    c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?sel.add(t):sel.delete(t);updateSubgen();};
     tradesEl.appendChild(c);
   });
+  updateSubgen();
 }
-renderTrades();
 
 /* ===== 団地クイック（公社のとき表示）===== */
 const DANCHI=["下到津","日報","沼","向山"];
@@ -520,6 +521,101 @@ const FURI_RE=new RegExp(GLOSSARY.map(g=>g[0]).join("|"),"g");
 const FURI_MAP=Object.fromEntries(GLOSSARY);
 function ruby(s){ return (FURI&&s)? String(s).replace(FURI_RE,w=>`<ruby>${w}<rt>${FURI_MAP[w]}</rt></ruby>`) : s; }
 $("#furiChip").onclick=()=>{ FURI=!FURI; $("#furiChip").classList.toggle("on",FURI); };
+
+/* ===== 作業者 ===== */
+const WORKERS=["ビン","ドン","アンディ","リフキ","イクノ","永井","山口","江口","トーヨーテック","ミロク"];
+const QTY_WORKERS=["トーヨーテック","ミロク"];
+const selWorker=new Set();
+WORKERS.forEach(w=>{
+  const c=document.createElement("div");c.className="chip";c.textContent=w;
+  c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?selWorker.add(w):selWorker.delete(w);renderWorkerQty();};
+  $("#workers").appendChild(c);
+});
+function renderWorkerQty(){
+  const el=$("#workerQty"); el.innerHTML="";
+  QTY_WORKERS.forEach(w=>{
+    if(!selWorker.has(w)) return;
+    const d=document.createElement("div");d.style.cssText="display:flex;align-items:center;gap:8px;margin-top:8px";
+    d.innerHTML=`<span style="font-size:14px;font-weight:600">${w} 人数</span>`;
+    const inp=document.createElement("input");inp.type="number";inp.min="1";inp.value="1";inp.id="qty_"+w;inp.style.cssText="max-width:90px";
+    d.appendChild(inp);el.appendChild(d);
+  });
+}
+function workerStr(){
+  const parts=[...selWorker].map(w=>{
+    if(QTY_WORKERS.includes(w)){ const q=($("#qty_"+w)||{}).value||"1"; return `${w}${q}名`; }
+    return w;
+  });
+  const other=$("#worker").value.trim(); if(other) parts.push(other);
+  return parts.join("・");
+}
+
+/* ===== 工種の細分ジャンル（木造大工・土工事）=====
+   ※墜落・転落は「高さ・足場」から別途生成するため、ここは作業固有の危険のみ */
+const SUBGEN={
+  "木造大工":[
+    {k:"建方・上棟",hz:[
+      {t:"はさまれ・落下",s:"建方で吊り材・梁・柱に挟まれる、玉掛け不良で落下",m:"玉掛けは有資格者・介錯ロープ／吊荷の下に入らない／合図を統一",sev:10,pos:2,freq:2},
+      {t:"飛来・落下",s:"建方中の工具・ボルト・材の落下",m:"工具に落下防止紐／下部を立入禁止／整理整頓",sev:6,pos:2,freq:2},
+      {t:"腰痛・反動",s:"梁・柱の建て起こし・運搬",m:"複数人やレッカーを活用／無理な姿勢を避ける",sev:3,pos:4,freq:4}]},
+    {k:"屋根・小屋組",hz:[
+      {t:"飛来・落下",s:"屋根材・瓦・工具の落下",m:"上下作業禁止・養生／工具紐／下部立入禁止",sev:6,pos:2,freq:2},
+      {t:"熱中症",s:"屋根上の高温・照り返し",m:"WBGT確認・こまめ休憩と水分塩分／単独作業は連絡確保",sev:6,pos:4,freq:4}]},
+    {k:"外部造作(破風・軒天)",hz:[
+      {t:"切れ・こすれ",s:"丸ノコ・カッターでの切断",m:"刃カバー・逆手切り禁止／保護手袋",sev:6,pos:4,freq:4},
+      {t:"飛来・落下",s:"材・工具の落下",m:"工具紐・下部養生／上下作業を避ける",sev:6,pos:2,freq:2}]},
+    {k:"内部造作",hz:[
+      {t:"切れ・こすれ",s:"丸ノコのキックバック・インパクトでの負傷",m:"丸ノコ逆手切り禁止・刃カバー／手袋の巻き込み注意",sev:6,pos:4,freq:4},
+      {t:"健康障害(粉じん)",s:"木屑・カット粉じんの吸入・眼",m:"集じん丸ノコ・防じんマスク・保護メガネ／換気",sev:3,pos:4,freq:4},
+      {t:"腰痛・反動",s:"中腰・上向き・運搬",m:"姿勢交代・台車／無理しない",sev:3,pos:4,freq:4}]},
+    {k:"階段・建具取付",hz:[
+      {t:"切れ",s:"加工時の切創",m:"刃の管理・保護手袋",sev:3,pos:4,freq:4},
+      {t:"はさまれ",s:"建具・重い造作材の取付で指を挟む",m:"2人作業・声掛け／手を添える位置に注意",sev:3,pos:4,freq:2},
+      {t:"腰痛",s:"建具・階段材の運搬",m:"2人運搬・台車",sev:3,pos:4,freq:4}]},
+    {k:"木部解体・撤去",hz:[
+      {t:"刺さり・踏み抜き",s:"釘・ビスの踏み抜き・刺さり",m:"踏み抜き防止インソール・厚底靴／釘は都度処理・折り曲げ",sev:3,pos:4,freq:4},
+      {t:"飛来・落下",s:"解体材の落下・飛散",m:"養生・下部立入禁止／保護メガネ",sev:6,pos:4,freq:4},
+      {t:"健康障害(粉じん)",s:"古材の粉じん・カビ",m:"防じんマスク・換気",sev:3,pos:2,freq:4}]}
+  ],
+  "土工事・掘削":[
+    {k:"掘削(重機)",hz:[
+      {t:"激突され",s:"バックホウの旋回・後進に巻き込まれる",m:"旋回範囲を立入禁止／誘導員・合図を統一",sev:10,pos:4,freq:2},
+      {t:"崩壊・倒壊",s:"掘削のり面・溝の崩れで生き埋め",m:"勾配確保・土留め／作業前に地山を点検",sev:10,pos:2,freq:2},
+      {t:"地下埋設物",s:"ガス・水道・電線の損傷",m:"試掘・埋設物図を確認／不明は手掘り",sev:6,pos:2,freq:1}]},
+    {k:"床付け・整地",hz:[
+      {t:"激突され",s:"重機・転圧機との接触",m:"立入禁止・誘導／合図を統一",sev:10,pos:2,freq:2},
+      {t:"転倒",s:"不整地・ぬかるみでの転倒",m:"足元確認・長靴／整地して通路確保",sev:3,pos:2,freq:4}]},
+    {k:"埋戻し・転圧",hz:[
+      {t:"はさまれ・激突",s:"転圧プレート・ローラー・重機との接触",m:"後進・旋回に注意／立入禁止・誘導",sev:10,pos:2,freq:2},
+      {t:"振動・騒音",s:"プレート・ランマーの長時間使用",m:"防振手袋・耳栓／作業を交代",sev:3,pos:4,freq:4}]},
+    {k:"残土・土砂搬出",hz:[
+      {t:"激突され・交通",s:"ダンプの後退・公道での接触",m:"誘導員・後退合図／第三者の動線を確認",sev:10,pos:2,freq:2},
+      {t:"飛来・落下",s:"積込み時の土砂・石の飛散落下",m:"立入禁止・保護メガネ／積込み中は近づかない",sev:3,pos:4,freq:2}]},
+    {k:"水替え・釜場",hz:[
+      {t:"感電",s:"水中ポンプ・水際の電気での感電",m:"漏電遮断器・アース／濡れ手禁止・絶縁",sev:10,pos:2,freq:2},
+      {t:"転倒",s:"ぬかるみ・水際で滑る",m:"長靴・足元確認／通路を確保",sev:3,pos:4,freq:4}]},
+    {k:"手掘り・人力",hz:[
+      {t:"崩壊・倒壊",s:"溝・狭い掘削の崩れ",m:"土留め・勾配を確保／深さに注意",sev:10,pos:2,freq:2},
+      {t:"腰痛",s:"スコップ・人力掘削の繰り返し",m:"姿勢を交代・休憩を取る",sev:3,pos:4,freq:4}]}
+  ]
+};
+const selSub=new Map(); // "親|細分" -> {parent,k,hz}
+function updateSubgen(){
+  const wrap=$("#subgenWrap"); if(!wrap) return; wrap.innerHTML="";
+  for(const key of [...selSub.keys()]){ if(!sel.has(key.split("|")[0])) selSub.delete(key); }
+  Object.keys(SUBGEN).forEach(parent=>{
+    if(!sel.has(parent)) return;
+    const lab=document.createElement("label");lab.style.marginTop="10px";lab.textContent="┗ "+parent+"：細かい作業（複数可）";wrap.appendChild(lab);
+    const box=document.createElement("div");box.className="chips";wrap.appendChild(box);
+    SUBGEN[parent].forEach(sg=>{
+      const key=parent+"|"+sg.k;
+      const c=document.createElement("div");c.className="chip"+(selSub.has(key)?" on":"");c.textContent=sg.k;
+      c.onclick=()=>{c.classList.toggle("on");c.classList.contains("on")?selSub.set(key,{parent,k:sg.k,hz:sg.hz}):selSub.delete(key);};
+      box.appendChild(c);
+    });
+  });
+}
+renderTrades();
 
 /* ===== 現場の状況 ===== */
 const CONDS=[
@@ -627,16 +723,22 @@ $("#gen").onclick=()=>{
   const site=$("#site").value.trim()||"（現場名未入力）";
   const dateStr=fmtDate($("#day").value);
   const weather=$("#weather").value;
-  const worker=$("#worker").value.trim();
+  const worker=workerStr();
   const work=$("#work").value.trim();
 
   const di=dayIndex($("#day").value);
   let hz=[];
   // 工種の危険（墜落・転落は高さ・足場の選択から別途生成するため除外）
-  sel.forEach(t=>DB[t].forEach((h,idx)=>{
-    if(/墜落|転落/.test(h.t)) return;
-    hz.push({...h,trade:t,pt:h.sev+h.pos+h.freq,seed:(idx+di)%97});
-  }));
+  // 木造大工・土工事は細分ジャンルが選ばれていればその危険を使う
+  sel.forEach(t=>{
+    let list;
+    if(SUBGEN[t]){ const chosen=[...selSub.values()].filter(x=>x.parent===t); list = chosen.length ? chosen.flatMap(x=>x.hz) : DB[t]; }
+    else list = DB[t];
+    list.forEach((h,idx)=>{
+      if(/墜落|転落/.test(h.t)) return;
+      hz.push({...h,trade:t,pt:h.sev+h.pos+h.freq,seed:(idx+di)%97});
+    });
+  });
   // 高さ・足場に応じた墜落リスクを追加（地上・低所は追加なし）
   [...selHeight].forEach(k=>{ const f=HEIGHT[k]; if(f) hz.push({...f,trade:"高さ:"+k,pt:f.sev+f.pos+f.freq,seed:0}); });
   hz.sort((a,b)=> b.pt-a.pt || a.seed-b.seed);
