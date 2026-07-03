@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ハゼモト建設 擁壁・外構概算ツール</title>
+<meta name="description" content="擁壁の高さを入れるだけで、断面・配筋・鉄筋重量・型枠㎡・生コン量を自動算出。現場打ちRC擁壁とCP(プレキャストL型)を金額比較。土地調査の現地でその場説明。" />
+<meta name="theme-color" content="#1b3a5b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="擁壁概算" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231b3a5b'/%3E%3Ctext y='72' x='50' font-size='54' text-anchor='middle'%3E%F0%9F%A7%B1%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --navy:#1b3a5b; --navy2:#24527d; --accent:#ff7a00; --bg:#f4f6f9;
+    --card:#fff; --line:#e2e8f0; --ink:#1f2937; --sub:#64748b;
+    --ok:#16a34a; --warn:#e67e22; --bad:#c0392b; --teal:#0f766e; --blue:#0369a1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.6}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:12px 16px 0;position:sticky;top:0;z-index:20}
+  header h1{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+  header .sub{font-size:11px;color:#cbd5e1;margin:2px 0 0}
+  .tabs{display:flex;margin-top:10px;overflow-x:auto}
+  .tab{flex:1;min-width:78px;text-align:center;padding:11px 4px;font-size:13.5px;font-weight:700;color:#cbd5e1;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab.on{color:#fff;border-bottom-color:var(--accent)}
+  .wrap{max-width:880px;margin:0 auto;padding:16px 14px 100px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h2.sec{font-size:15px;margin:0 0 12px;color:var(--navy);border-left:5px solid var(--accent);padding-left:10px}
+  label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px;font-weight:600}
+  input[type=text],input[type=number],select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .row3{display:flex;gap:8px;flex-wrap:wrap}.row3>*{flex:1;min-width:90px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:14px;cursor:pointer;user-select:none;transition:.12s;font-weight:600}
+  .chip:hover{border-color:var(--navy2)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .btn{display:block;width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-sub{background:#eef2f7;color:var(--navy);border:1.5px solid var(--line);font-size:14px;padding:11px}
+  .btn-ghost{background:#fff;color:var(--navy);border:1.5px solid var(--line);font-size:13px;padding:9px}
+  .hidden{display:none}
+  .muted{font-size:12px;color:var(--sub)}
+  .note{background:#eff6ff;border:1px solid #cfe0f5;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#1e40af;margin:8px 0}
+  .warnbox{background:#fff8ef;border:1px solid #f6d9b3;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#92400e;margin:8px 0}
+  .kpi{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .kpi .box{flex:1;min-width:150px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi .box.big{background:linear-gradient(135deg,#1b3a5b,#24527d);border:none}
+  .kpi .box.big .n,.kpi .box.big .l{color:#fff}
+  .kpi .box .n{font-size:23px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+  .kpi .box .n small{font-size:13px;font-weight:700}
+  .kpi .box .l{font-size:12px;color:var(--sub)}
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:middle}
+  table.tbl th{background:#f1f5f9;font-size:12px;color:var(--sub)}
+  table.tbl td.r,table.tbl th.r{text-align:right}
+  table.tbl td.c,table.tbl th.c{text-align:center}
+  table.tbl tr.sum td{background:#f8fafc;font-weight:800;color:var(--navy)}
+  table.tbl tr.grand td{background:#1b3a5b;color:#fff;font-weight:800;font-size:14px}
+  table.tbl .g{background:#eef4fb;font-weight:700;color:var(--navy)}
+  .priceinp{width:100%;padding:8px 9px;border:1.5px solid var(--line);border-radius:8px;font-size:15px;text-align:right}
+  .cmp{display:flex;gap:10px;flex-wrap:wrap}
+  .cmp .col{flex:1;min-width:150px;border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fbfcfe}
+  .cmp .col.win{border-color:var(--ok);box-shadow:0 0 0 2px rgba(22,163,74,.12)}
+  .cmp .col h4{margin:0 0 6px;font-size:14px;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+  .cmp .col .amt{font-size:22px;font-weight:800;color:var(--navy)}
+  .cmp .col ul{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:#475569}
+  .cmp .col ul li{margin:2px 0}
+  .tag{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;border-radius:6px;padding:2px 7px}
+  .tag.ok{background:var(--ok)}.tag.acc{background:var(--accent)}.tag.gray{background:#94a3b8}
+  .secfig{text-align:center;margin:4px 0 2px}
+  .secfig svg{max-width:100%;height:auto}
+  .outbox{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:50;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:.95}
+  details{border:1px solid var(--line);border-radius:10px;padding:6px 12px;margin-top:8px;background:#fbfcfe}
+  summary{font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;padding:4px 0}
+  .fld small{font-size:11px;color:var(--sub);font-weight:500}
+  @media print{header,.tabs,.no-print{display:none!important}.wrap{padding:0}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧱 擁壁・外構 概算ツール</h1>
+  <div class="sub">ハゼモト建設 ／ 高さを入れれば 配筋・鉄筋重量・型枠㎡・生コン量・金額根拠を自動算出（現場打ちRC × CP比較）</div>
+  <div class="tabs">
+    <div class="tab on" data-tab="in">📐 条件・概算</div>
+    <div class="tab" data-tab="detail">📋 数量・根拠</div>
+    <div class="tab" data-tab="cp">⚖️ CP比較</div>
+    <div class="tab" data-tab="price">💴 単価設定</div>
+  </div>
+</header>
+
+<!-- ============ タブ1：条件入力＋概算サマリ ============ -->
+<div class="wrap" id="tab-in">
+  <div class="card">
+    <h2 class="sec">1. 擁壁の条件（現地で測って入力）</h2>
+    <div class="row">
+      <div class="fld"><label>擁壁の高さ（地上高 H）m<small>／地面から天端まで</small></label>
+        <input type="number" id="Hg" value="2.0" min="0.5" max="6" step="0.1"></div>
+      <div class="fld"><label>延長 L（m）<small>／擁壁の長さ</small></label>
+        <input type="number" id="L" value="10" min="1" step="0.5"></div>
+    </div>
+    <label>型式</label>
+    <div class="chips" id="typeChips">
+      <span class="chip on" data-k="invT">逆T型（つま先＋かかと）</span>
+      <span class="chip" data-k="L">L型（境界ぎりぎり・かかとのみ）</span>
+    </div>
+    <details>
+      <summary>土質・設計条件（ふつうはこのままでOK）</summary>
+      <div class="row3" style="margin-top:8px">
+        <div class="fld"><label>根入れ Df（m）</label><input type="number" id="Df" value="0.4" min="0.35" step="0.05"></div>
+        <div class="fld"><label>内部摩擦角 φ（°）</label><input type="number" id="phi" value="30" min="20" max="40" step="1"></div>
+        <div class="fld"><label>土の単位重量 γ（kN/m³）</label><input type="number" id="gamma" value="18" min="15" max="20" step="0.5"></div>
+      </div>
+      <div class="row3">
+        <div class="fld"><label>上載荷重 q（kN/m²）<small>／宅地は10目安</small></label><input type="number" id="q" value="10" min="0" step="1"></div>
+        <div class="fld"><label>鉄筋許容応力 fsa（N/mm²）</label><input type="number" id="fsa" value="180" min="140" max="210" step="5"></div>
+        <div class="fld"><label>かぶり（mm）</label><input type="number" id="cover" value="70" min="40" max="100" step="5"></div>
+      </div>
+      <p class="muted">※ 概算用の簡易ランキン土圧＋片持ち梁モデル。本設計は構造計算書で確定します。</p>
+    </details>
+    <button class="btn btn-primary" id="run">🧮 概算する</button>
+  </div>
+
+  <div id="summary" class="hidden">
+    <div class="card">
+      <h2 class="sec">2. 概算サマリ（現場打ちRC擁壁）</h2>
+      <div class="kpi">
+        <div class="box big"><div class="n" id="kTotal">—</div><div class="l">現場打ちRC 総額（税抜・諸経費込）</div></div>
+        <div class="box"><div class="n" id="kUnit">—</div><div class="l">当り単価（円/m）</div></div>
+      </div>
+      <div class="kpi" style="margin-top:4px">
+        <div class="box"><div class="n" id="kRebar">—</div><div class="l">鉄筋 総重量</div></div>
+        <div class="box"><div class="n" id="kForm">—</div><div class="l">型枠 面積</div></div>
+        <div class="box"><div class="n" id="kConc">—</div><div class="l">生コン 数量</div></div>
+        <div class="box"><div class="n" id="kRatio">—</div><div class="l">鉄筋量（kg/m³）</div></div>
+      </div>
+      <div class="secfig" id="secfig"></div>
+      <div id="dimline" class="muted" style="text-align:center"></div>
+      <div id="cpMini"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">3. 顧客説明サマリ（コピーして使える）</h2>
+      <div class="outbox" id="custText">—</div>
+      <button class="btn btn-sub" id="copyCust">📋 説明文をコピー</button>
+      <button class="btn btn-ghost no-print" onclick="window.print()">🖨 印刷 / PDF保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ タブ2：数量・根拠 ============ -->
+<div class="wrap hidden" id="tab-detail">
+  <div class="card">
+    <h2 class="sec">断面の決定（高さから自動）</h2>
+    <table class="tbl" id="dimTbl"><tbody><tr><td class="muted">「概算する」を押してください</td></tr></tbody></table>
+  </div>
+  <div class="card">
+    <h2 class="sec">配筋の検討（見積根拠）</h2>
+    <div id="rcBasis" class="muted">—</div>
+    <table class="tbl" id="rebarTbl"><tbody></tbody></table>
+    <p class="muted" id="rebarNote"></p>
+  </div>
+  <div class="card">
+    <h2 class="sec">数量拾い＋金額（現場打ちRC）</h2>
+    <table class="tbl" id="qtyTbl"><tbody></tbody></table>
+    <p class="muted">単価は「💴 単価設定」タブで九州シンセイ単価に差し替えできます。ロス・端数は概算値です。</p>
+  </div>
+</div>
+
+<!-- ============ タブ3：CP比較 ============ -->
+<div class="wrap hidden" id="tab-cp">
+  <div class="card">
+    <h2 class="sec">現場打ちRC vs CP（プレキャストL型）</h2>
+    <div class="cmp" id="cmpCols"><div class="muted">「概算する」を押すと比較が出ます。</div></div>
+  </div>
+  <div class="card">
+    <h2 class="sec">CP 数量・金額の内訳</h2>
+    <table class="tbl" id="cpTbl"><tbody><tr><td class="muted">—</td></tr></tbody></table>
+    <div class="note" id="cpAdvice"></div>
+  </div>
+</div>
+
+<!-- ============ タブ4：単価設定 ============ -->
+<div class="wrap hidden" id="tab-price">
+  <div class="card">
+    <h2 class="sec">単価設定（九州シンセイ単価に差し替え）</h2>
+    <p class="muted">初期値は一般的な仮単価です。実単価を入れると全タブに即反映され、この端末に保存されます。</p>
+    <table class="tbl" id="priceTbl"><tbody></tbody></table>
+    <div class="row">
+      <button class="btn btn-ghost" id="resetPrice">初期値に戻す</button>
+      <button class="btn btn-sub" id="savePrice">保存して再計算</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 単価（編集可・仮初期値） ================= */
+const DEFAULT_PRICES = {
+  concrete:   {label:"生コン（18-8-25 等）",       unit:"円/m³",  v:16000, grp:"躯体"},
+  pump:       {label:"ポンプ圧送",                  unit:"円/m³",  v:3500,  grp:"躯体"},
+  rebar:      {label:"鉄筋 材工（加工組立共）",      unit:"円/kg",  v:150,   grp:"躯体"},
+  form:       {label:"型枠 材工（打放し・両面）",    unit:"円/m²",  v:6000,  grp:"躯体"},
+  excav:      {label:"床掘・機械掘削",              unit:"円/m³",  v:1500,  grp:"付帯"},
+  haul:       {label:"残土 積込・運搬処分",          unit:"円/m³",  v:4500,  grp:"付帯"},
+  backfill:   {label:"埋戻し・締固め",              unit:"円/m³",  v:1800,  grp:"付帯"},
+  crushed:    {label:"基礎砕石 材工（RC-40 t=100）", unit:"円/m³",  v:6000,  grp:"付帯"},
+  leveling:   {label:"均しコンクリート（t=50）",     unit:"円/m³",  v:18000, grp:"付帯"},
+  backgravel: {label:"裏込め砕石（透水層）",         unit:"円/m³",  v:6000,  grp:"付帯"},
+  weep:       {label:"水抜きパイプ VP50",           unit:"円/本",  v:1500,  grp:"付帯"},
+  joint:      {label:"伸縮目地（1箇所あたり）",      unit:"円/箇所",v:6000,  grp:"付帯"},
+  overhead:   {label:"諸経費（現場管理＋一般管理）", unit:"%",      v:15,    grp:"経費"},
+  // CP（プレキャストL型）関連
+  cp_h10:     {label:"CP製品 L型 H1.0以下",        unit:"円/m",   v:22000, grp:"CP製品"},
+  cp_h15:     {label:"CP製品 L型 H1.5以下",        unit:"円/m",   v:34000, grp:"CP製品"},
+  cp_h20:     {label:"CP製品 L型 H2.0以下",        unit:"円/m",   v:56000, grp:"CP製品"},
+  cp_h25:     {label:"CP製品 L型 H2.5以下（大型）", unit:"円/m",   v:82000, grp:"CP製品"},
+  cp_set:     {label:"CP 据付（重機＋人工）",        unit:"円/m",   v:12000, grp:"CP製品"},
+  cp_haul:    {label:"CP 製品運搬（回送）",          unit:"円/m",   v:4000,  grp:"CP製品"},
+};
+let P = loadPrices();
+function loadPrices(){
+  const p = JSON.parse(JSON.stringify(DEFAULT_PRICES));
+  try{const s=JSON.parse(localStorage.getItem("youheki_prices")||"{}");
+    for(const k in s){ if(p[k]) p[k].v = s[k]; }}catch(e){}
+  return p;
+}
+function savePrices(){
+  const s={}; for(const k in P) s[k]=P[k].v;
+  localStorage.setItem("youheki_prices", JSON.stringify(s));
+}
+const yen = n => "¥"+Math.round(n).toLocaleString("ja-JP");
+const num = (n,d=2)=> (Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toLocaleString("ja-JP");
+
+/* ================= 鉄筋テーブル ================= */
+const BAR = {D13:{a:127,w:0.995},D16:{a:199,w:1.560},D19:{a:287,w:2.250},D22:{a:387,w:3.040},D25:{a:507,w:3.980}};
+const LADDER = [
+  ["D13",250],["D13",200],["D13",150],
+  ["D16",200],["D16",150],["D16",125],
+  ["D19",150],["D19",125],
+  ["D22",125],["D22",100],["D25",100]
+];
+function pickBar(AsReq){ // AsReq mm²/m
+  for(const [d,s] of LADDER){ const prov=BAR[d].a*1000/s; if(prov>=AsReq) return {d,s,prov}; }
+  const [d,s]=LADDER[LADDER.length-1]; return {d,s,prov:BAR[d].a*1000/s};
+}
+const r05 = x => Math.round(x/0.05)*0.05;
+
+/* ================= メイン計算 ================= */
+let CUR=null;
+function calc(){
+  const Hg=+val("Hg"), L=+val("L"), Df=Math.max(0.35,+val("Df"));
+  const phi=+val("phi"), gamma=+val("gamma"), q=+val("q"), fsa=+val("fsa"), cover=+val("cover")/1000;
+  const type=document.querySelector("#typeChips .chip.on").dataset.k;
+
+  const H = Hg + Df;                       // 全高（底版下端〜天端）
+  const tb = Math.max(0.30, r05(0.12*H));  // 底版厚
+  const t1 = Math.max(0.25, r05(0.11*H));  // 壁厚（底部）
+  const ttop = Math.min(0.30, Math.max(0.20, r05(0.07*H))); // 壁厚（天端）
+  let B  = Math.max(1.0, r05(0.60*H));     // 底版幅
+  const Hw = H - tb;                        // 竪壁高
+  let toe = (type==="invT") ? r05(B/3) : 0.10;
+  let heel = B - toe - t1;
+  if(heel<0.20){ heel=0.20; B=toe+t1+heel; }
+
+  // --- 土圧・竪壁配筋 ---
+  const Ka = Math.pow(Math.tan((45-phi/2)*Math.PI/180),2);
+  const Mstem = Ka*gamma*Math.pow(Hw,3)/6 + Ka*q*Math.pow(Hw,2)/2;   // kN·m/m
+  const dStem = Math.max(0.08, t1 - cover - 0.008);
+  const AsStem = Mstem*1e6/(fsa*0.875*dStem*1000);                   // mm²/m
+  const barStem = pickBar(AsStem);
+
+  // --- 底版配筋（かかと側 簡易片持ち） ---
+  const Mbase = (gamma*Hw + q)*Math.pow(heel,2)/2;                   // kN·m/m
+  const dBase = Math.max(0.08, tb - cover - 0.008);
+  const AsBase = Mbase*1e6/(fsa*0.875*dBase*1000);
+  const barBase = pickBar(AsBase);
+
+  // --- 数量（延長 L 全体） ---
+  const Vc = (((ttop+t1)/2)*Hw + tb*B) * L;                          // 生コン m³
+  const Fa = (2*Hw + 2*tb) * L;                                       // 型枠 m²
+
+  // 鉄筋グループ（本数・単長・重量）
+  const groups=[];
+  // 竪壁 主筋（背面・縦）
+  {const s=barStem.s/1000, n=Math.round(L/s), len=Hw+tb+0.30, w=BAR[barStem.d].w;
+   groups.push(g("竪壁 主筋（背面・縦）",barStem.d,`@${barStem.s}`,n,len,w));}
+  // 竪壁 前面 縦筋
+  {const sp=Math.min(0.30,2*barStem.s/1000), n=Math.round(L/sp), len=Hw+0.20;
+   groups.push(g("竪壁 前面 縦筋",  "D13",`@${Math.round(sp*1000)}`,n,len,BAR.D13.w));}
+  // 竪壁 配力筋（横・両面）
+  {const layers=Math.ceil(Hw/0.25), n=layers*2, len=L*1.05;
+   groups.push(g("竪壁 配力筋（横・両面）","D13","@250",n,len,BAR.D13.w));}
+  // 底版 主筋（横断・上下）
+  {const s=barBase.s/1000, n=Math.round(L/s)*2, len=B+0.15, w=BAR[barBase.d].w;
+   groups.push(g("底版 主筋（横断・上下）",barBase.d,`@${barBase.s}`,n,len,w));}
+  // 底版 配力筋（延長・上下）
+  {const layers=Math.ceil(B/0.25), n=layers*2, len=L*1.05;
+   groups.push(g("底版 配力筋（延長・上下）","D13","@250",n,len,BAR.D13.w));}
+  const rebarKg = groups.reduce((s,x)=>s+x.kg,0);
+  const ratio = rebarKg/Vc;   // kg/m³
+
+  // 付帯数量
+  const digW = B + 1.0, digD = Df + 0.15;
+  const excav = digW*digD*L;
+  const struct = Vc + (B*0.10*L) + (B*0.05*L);       // 埋設体積概算
+  const backfill = Math.max(0, excav - struct)*0.9;
+  const haul = Math.max(0, excav - backfill);
+  const crushed = B*0.10*L;
+  const leveling = B*0.05*L;
+  const backgravel = 0.30*Hw*L;
+  const weep = Math.max(1, Math.ceil(Hg*L/3));
+  const joints = Math.max(1, Math.ceil(L/10));
+
+  // --- 金額（現場打ち） ---
+  const concQ = Vc*1.03;
+  const items=[
+    ["躯体","生コン",       `${num(concQ)} m³`, concQ, P.concrete.v],
+    ["躯体","ポンプ圧送",   `${num(concQ)} m³`, concQ, P.pump.v],
+    ["躯体","鉄筋 材工",    `${num(rebarKg,0)} kg`, rebarKg, P.rebar.v],
+    ["躯体","型枠 材工",    `${num(Fa)} m²`, Fa, P.form.v],
+    ["付帯","床掘・掘削",   `${num(excav)} m³`, excav, P.excav.v],
+    ["付帯","残土運搬処分", `${num(haul)} m³`, haul, P.haul.v],
+    ["付帯","埋戻し",       `${num(backfill)} m³`, backfill, P.backfill.v],
+    ["付帯","基礎砕石",     `${num(crushed)} m³`, crushed, P.crushed.v],
+    ["付帯","均しコン",     `${num(leveling)} m³`, leveling, P.leveling.v],
+    ["付帯","裏込め砕石",   `${num(backgravel)} m³`, backgravel, P.backgravel.v],
+    ["付帯","水抜きパイプ", `${weep} 本`, weep, P.weep.v],
+    ["付帯","伸縮目地",     `${joints} 箇所`, joints, P.joint.v],
+  ];
+  let direct=0; items.forEach(it=> direct+= it[3]*it[4]);
+  const oh = direct*P.overhead.v/100;
+  const total = direct+oh;
+
+  // --- 工期概算（日） ---
+  const rcDays = 2 + Math.ceil(rebarKg/500) + Math.ceil(Fa/16) + 4 + 1;
+
+  // --- CP（プレキャストL型） ---
+  const cp = calcCP(Hg,L,Df);
+
+  CUR={Hg,L,Df,type,H,tb,t1,ttop,B,Hw,toe,heel,Ka,phi,gamma,q,
+       Mstem,AsStem,barStem,Mbase,AsBase,barBase,
+       Vc,Fa,rebarKg,ratio,groups,concQ,excav,haul,backfill,crushed,leveling,backgravel,weep,joints,
+       items,direct,oh,total,rcDays,cp};
+  return CUR;
+}
+function g(name,dia,pitch,n,len,w){ return {name,dia,pitch,n,len,kg:n*len*w}; }
+
+function calcCP(Hg,L,Df){
+  let key,max;
+  if(Hg<=1.0){key="cp_h10";max="1.0";}
+  else if(Hg<=1.5){key="cp_h15";max="1.5";}
+  else if(Hg<=2.0){key="cp_h20";max="2.0";}
+  else {key="cp_h25";max="2.5";}
+  const over = Hg>2.5;
+  const prod=P[key].v, set=P.cp_set.v, cphaul=P.cp_haul.v;
+  const Bcp=Math.max(0.8, r05(0.55*(Hg+Df)));
+  const excav=(Bcp+0.8)*(Df+0.15)*L;
+  const crushed=Bcp*0.10*L, leveling=Bcp*0.05*L;
+  const backgravel=0.20*Hg*L, backfill=excav*0.5, weep=Math.max(1,Math.ceil(Hg*L/3));
+  const rows=[
+    ["CP製品 L型 (H≤"+max+")",`${num(L)} m`, L, prod],
+    ["CP 据付（重機＋人工）",`${num(L)} m`, L, set],
+    ["CP 製品運搬",`${num(L)} m`, L, cphaul],
+    ["床掘・掘削",`${num(excav)} m³`, excav, P.excav.v],
+    ["残土運搬処分",`${num(excav-backfill)} m³`, excav-backfill, P.haul.v],
+    ["埋戻し",`${num(backfill)} m³`, backfill, P.backfill.v],
+    ["基礎砕石",`${num(crushed)} m³`, crushed, P.crushed.v],
+    ["均しコン",`${num(leveling)} m³`, leveling, P.leveling.v],
+    ["裏込め砕石",`${num(backgravel)} m³`, backgravel, P.backgravel.v],
+    ["水抜きパイプ",`${weep} 本`, weep, P.weep.v],
+  ];
+  let direct=0; rows.forEach(r=>direct+=r[2]*r[3]);
+  const oh=direct*P.overhead.v/100, total=direct+oh;
+  const cpDays=1+Math.ceil(L/8)+1;
+  return {rows,direct,oh,total,over,max,cpDays};
+}
+
+/* ================= 描画 ================= */
+function render(){
+  const c=calc();
+  show("summary");
+  // KPI
+  set("kTotal", yen(c.total)+" <small>+税</small>");
+  set("kUnit", yen(c.total/c.L)+" <small>/m</small>");
+  set("kRebar", num(c.rebarKg,0)+" <small>kg</small>");
+  set("kForm", num(c.Fa,1)+" <small>m²</small>");
+  set("kConc", num(c.concQ,1)+" <small>m³</small>");
+  set("kRatio", num(c.ratio,0)+" <small>kg/m³</small>");
+  document.getElementById("secfig").innerHTML=drawSection(c);
+  set("dimline",`断面：底版幅 B=${num(c.B)}m ／ 竪壁高 ${num(c.Hw)}m ／ 壁厚 ${Math.round(c.ttop*1000)}→${Math.round(c.t1*1000)}mm ／ 底版厚 ${Math.round(c.tb*1000)}mm`);
+
+  // CPミニ比較
+  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  document.getElementById("cpMini").innerHTML=
+    `<div class="note" style="margin-top:12px">⚖️ <b>CP(プレキャストL型)なら ${yen(c.cp.total)}</b>／${c.cp.over?"※H2.5超は要特注・現場打ち推奨。":""}
+     現場打ちとの差 <b style="color:${rcWin?'var(--ok)':'var(--bad)'}">${rcWin?"現場打ちが":"CPが"} ${yen(Math.abs(diff))} 安い</b>。詳しくは「⚖️ CP比較」タブ。</div>`;
+
+  // 顧客説明文
+  set("custText", customerText(c), true);
+
+  renderDetail(c);
+  renderCP(c);
+  renderPrice();
+}
+
+function drawSection(c){
+  // 断面図（正面から見た逆T/L型）: 高さ方向 = H, 横 = B
+  const W=340, Hpx=230, pad=42;
+  const sc=Math.min((W-2*pad)/c.B, (Hpx-2*pad)/c.H);
+  const bx=(W-c.B*sc)/2, by=Hpx-pad;                  // 底版左下基準
+  const X=x=>bx+x*sc, Y=y=>by-y*sc;                    // y:底版下端=0
+  // 頂点：底版(0..B, 0..tb)、竪壁は toe位置から t_top/t1 台形
+  const wl=c.toe, wr=c.toe+c.t1;                        // 壁 底部左右
+  const wtl=c.toe+(c.t1-c.ttop)/2, wtr=wtl+c.ttop;     // 壁 天端左右(中央寄せ)
+  const poly=[
+    [0,0],[c.B,0],[c.B,c.tb],[wr,c.tb],[wtr,c.H],[wtl,c.H],[wl,c.tb],[0,c.tb]
+  ].map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  // 地表・裏込め
+  const groundY=Y(c.tb+c.Hw*0 + c.Df); // 地上高の地面ライン: 天端-Hg = H-Hg = Df
+  const gy=Y(c.Df);
+  // 鉄筋（主筋ライン：背面縦・底版横）
+  const backX=X(wr)-2, mainBar=`<line x1="${backX}" y1="${Y(c.tb).toFixed(1)}" x2="${backX}" y2="${Y(c.H-0.05).toFixed(1)}" stroke="#c0392b" stroke-width="2"/>`;
+  const baseBarY=Y(c.tb-0.06);
+  const baseBar=`<line x1="${X(0.05).toFixed(1)}" y1="${baseBarY.toFixed(1)}" x2="${X(c.B-0.05).toFixed(1)}" y2="${baseBarY.toFixed(1)}" stroke="#c0392b" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 ${W} ${Hpx}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+    <rect x="0" y="0" width="${W}" height="${Hpx}" fill="#fbfcfe"/>
+    <line x1="${X(0)-14}" y1="${gy.toFixed(1)}" x2="${X(c.B)+14}" y2="${gy.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text x="${X(c.B)+16}" y="${(gy+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
+    <polygon points="${poly}" fill="#dbe4ee" stroke="#1b3a5b" stroke-width="1.6"/>
+    ${mainBar}${baseBar}
+    <text x="${backX+4}" y="${Y(c.H-0.3).toFixed(1)}" font-size="9" fill="#c0392b">主筋 ${c.barStem.d}@${c.barStem.s}</text>
+    <text x="${X(c.B/2).toFixed(1)}" y="${(baseBarY+13).toFixed(1)}" font-size="9" fill="#c0392b" text-anchor="middle">底版筋 ${c.barBase.d}@${c.barBase.s}</text>
+    <line x1="${X(0).toFixed(1)}" y1="${(by+10).toFixed(1)}" x2="${X(c.B).toFixed(1)}" y2="${(by+10).toFixed(1)}" stroke="#334155" stroke-width="1"/>
+    <text x="${X(c.B/2).toFixed(1)}" y="${(by+22).toFixed(1)}" font-size="10" fill="#334155" text-anchor="middle">B=${num(c.B)}m</text>
+    <line x1="${(bx-12).toFixed(1)}" y1="${Y(0).toFixed(1)}" x2="${(bx-12).toFixed(1)}" y2="${Y(c.H).toFixed(1)}" stroke="#334155" stroke-width="1"/>
+    <text x="${(bx-16).toFixed(1)}" y="${Y(c.H/2).toFixed(1)}" font-size="10" fill="#334155" text-anchor="end" transform="rotate(-90 ${(bx-16).toFixed(1)} ${Y(c.H/2).toFixed(1)})">全高 ${num(c.H)}m</text>
+    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">断面（${c.type==="invT"?"逆T型":"L型"}）</text>
+  </svg>`;
+}
+
+function renderDetail(c){
+  // 断面寸法表
+  document.getElementById("dimTbl").innerHTML=`<tbody>
+    <tr><td>擁壁 全高 H（地上${num(c.Hg)}＋根入れ${num(c.Df)}）</td><td class="r">${num(c.H)} m</td></tr>
+    <tr><td>底版幅 B</td><td class="r">${num(c.B)} m</td></tr>
+    <tr><td>├ つま先長</td><td class="r">${num(c.toe)} m</td></tr>
+    <tr><td>└ かかと長</td><td class="r">${num(c.heel)} m</td></tr>
+    <tr><td>底版厚 tb</td><td class="r">${Math.round(c.tb*1000)} mm</td></tr>
+    <tr><td>竪壁高 Hw</td><td class="r">${num(c.Hw)} m</td></tr>
+    <tr><td>壁厚（天端→底部）</td><td class="r">${Math.round(c.ttop*1000)} → ${Math.round(c.t1*1000)} mm</td></tr>
+  </tbody>`;
+  // 配筋根拠
+  document.getElementById("rcBasis").innerHTML=
+    `土圧係数 Ka=${num(c.Ka,3)}（φ=${c.phi}°）。<br>
+     ・竪壁：曲げ M=${num(c.Mstem,1)} kN·m/m → 必要鉄筋量 As=${num(c.AsStem,0)} mm²/m → <b>${c.barStem.d}@${c.barStem.s}</b>（配置${num(c.barStem.prov,0)} mm²/m）<br>
+     ・底版：曲げ M=${num(c.Mbase,1)} kN·m/m → 必要As=${num(c.AsBase,0)} mm²/m → <b>${c.barBase.d}@${c.barBase.s}</b>（配置${num(c.barBase.prov,0)} mm²/m）`;
+  let rb=`<tbody><tr><th>部材</th><th class="c">径</th><th class="c">ピッチ</th><th class="r">本数</th><th class="r">単長m</th><th class="r">質量kg</th></tr>`;
+  c.groups.forEach(x=> rb+=`<tr><td>${x.name}</td><td class="c">${x.dia}</td><td class="c">${x.pitch}</td><td class="r">${x.n}</td><td class="r">${num(x.len)}</td><td class="r">${num(x.kg,0)}</td></tr>`);
+  rb+=`<tr class="sum"><td colspan="5">鉄筋 合計</td><td class="r">${num(c.rebarKg,0)} kg</td></tr></tbody>`;
+  document.getElementById("rebarTbl").innerHTML=rb;
+  document.getElementById("rebarNote").innerHTML=`鉄筋量 ${num(c.ratio,0)} kg/m³（一般的なRC擁壁は概ね 50〜130 kg/m³）。定着・重ね継手・フックを概算加算済み。${c.Hg>3?'<b style="color:#92400e">※高さ3m超は必ず構造計算で本設計を確定してください。</b>':''}`;
+
+  // 数量・金額
+  let q=`<tbody><tr><th>区分</th><th>項目</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr>`;
+  let cur="";
+  c.items.forEach(it=>{ if(it[0]!==cur){cur=it[0]; q+=`<tr class="g"><td colspan="5">${cur}</td></tr>`;}
+    q+=`<tr><td></td><td>${it[1]}</td><td class="r">${it[2]}</td><td class="r">${yen(it[4])}</td><td class="r">${yen(it[3]*it[4])}</td></tr>`; });
+  q+=`<tr class="sum"><td colspan="4">直接工事費</td><td class="r">${yen(c.direct)}</td></tr>`;
+  q+=`<tr><td></td><td>諸経費</td><td class="r c" colspan="2">${P.overhead.v}%</td><td class="r">${yen(c.oh)}</td></tr>`;
+  q+=`<tr class="grand"><td colspan="4">合計（税抜）／ 工期目安 約${c.rcDays}日</td><td class="r">${yen(c.total)}</td></tr></tbody>`;
+  document.getElementById("qtyTbl").innerHTML=q;
+}
+
+function renderCP(c){
+  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  document.getElementById("cmpCols").innerHTML=`
+    <div class="col ${rcWin?'':'win'}">
+      <h4>CP（プレキャストL型）${rcWin?'':'<span class="tag ok">安い</span>'}</h4>
+      <div class="amt">${yen(c.cp.total)}</div>
+      <div class="muted">工期 約${c.cp.cpDays}日</div>
+      <ul><li>工期が短い・品質安定</li><li>製品費が高い／大型は割高</li><li>H2.5超は特注扱い</li><li>現場条件（搬入・クレーン）に左右</li></ul>
+    </div>
+    <div class="col ${rcWin?'win':''}">
+      <h4>現場打ちRC（自社施工）${rcWin?'<span class="tag ok">安い</span>':''}</h4>
+      <div class="amt">${yen(c.total)}</div>
+      <div class="muted">工期 約${c.rcDays}日</div>
+      <ul><li>自社の鉄筋・型枠で内製化</li><li>高さ・線形の自由度が高い</li><li>養生期間が必要</li><li>数量根拠が明確（本ツール）</li></ul>
+    </div>`;
+  let t=`<tbody><tr><th>項目</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr>`;
+  c.cp.rows.forEach(r=> t+=`<tr><td>${r[0]}</td><td class="r">${r[1]}</td><td class="r">${yen(r[3])}</td><td class="r">${yen(r[2]*r[3])}</td></tr>`);
+  t+=`<tr class="sum"><td colspan="3">直接工事費</td><td class="r">${yen(c.cp.direct)}</td></tr>`;
+  t+=`<tr><td>諸経費</td><td class="r c" colspan="2">${P.overhead.v}%</td><td class="r">${yen(c.cp.oh)}</td></tr>`;
+  t+=`<tr class="grand"><td colspan="3">CP 合計（税抜）</td><td class="r">${yen(c.cp.total)}</td></tr></tbody>`;
+  document.getElementById("cpTbl").innerHTML=t;
+  document.getElementById("cpAdvice").innerHTML= rcWin
+    ? `この高さ・延長では <b>現場打ちRCが ${yen(Math.abs(diff))} 有利</b>。自社の鉄筋・型枠工事で内製化するメリットが出ます。${c.cp.over?"CPは特注のため割高です。":""}`
+    : `この条件では <b>CPが ${yen(Math.abs(diff))} 有利</b>。工期短縮も効くため、搬入・クレーンが確保できるならCPも検討価値あり。`;
+}
+
+function renderPrice(){
+  let cur="", h=`<tbody><tr><th>項目</th><th class="c">単位</th><th class="r">単価</th></tr>`;
+  for(const k in P){ const it=P[k];
+    if(it.grp!==cur){cur=it.grp; h+=`<tr class="g"><td colspan="3">${cur}</td></tr>`;}
+    h+=`<tr><td>${it.label}</td><td class="c">${it.unit}</td><td class="r"><input class="priceinp" type="number" data-k="${k}" value="${it.v}" step="any"></td></tr>`;
+  }
+  h+=`</tbody>`;
+  document.getElementById("priceTbl").innerHTML=h;
+  document.querySelectorAll(".priceinp").forEach(inp=> inp.addEventListener("change",e=>{ P[e.target.dataset.k].v=+e.target.value; }));
+}
+
+function customerText(c){
+  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  return `【擁壁 概算のご説明】ハゼモト建設
+■ 条件：${c.type==="invT"?"逆T型":"L型"}RC擁壁 ／ 地上高 ${num(c.Hg)}m × 延長 ${num(c.L)}m
+■ 断面：底版幅 ${num(c.B)}m・壁厚 ${Math.round(c.ttop*1000)}→${Math.round(c.t1*1000)}mm・底版厚 ${Math.round(c.tb*1000)}mm（根入れ ${num(c.Df)}m）
+
+■ 見積の根拠（数量）
+・生コン：約 ${num(c.concQ,1)} m³
+・鉄筋 ：約 ${num(c.rebarKg,0)} kg（${c.barStem.d}@${c.barStem.s} 主筋ほか／${num(c.ratio,0)}kg/m³）
+・型枠 ：約 ${num(c.Fa,1)} m²
+
+■ 概算金額（税抜・諸経費込）
+・現場打ちRC（自社施工）：${yen(c.total)}  ＝ 約 ${yen(c.total/c.L)}/m
+・CP（プレキャストL型）  ：${yen(c.cp.total)}
+→ ${rcWin?`現場打ちが ${yen(Math.abs(diff))} お値打ちです。`:`CPが ${yen(Math.abs(diff))} お値打ちです。`}
+
+※ 本書は現地概算です。地盤・境界・排水等により本設計（構造計算）で確定します。`;
+}
+
+/* ================= UI ================= */
+function val(id){return document.getElementById(id).value;}
+function set(id,html,text=false){const e=document.getElementById(id); if(text)e.textContent=html; else e.innerHTML=html;}
+function show(id){document.getElementById(id).classList.remove("hidden");}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600);}
+
+document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
+  ["in","detail","cp","price"].forEach(k=> document.getElementById("tab-"+k).classList.toggle("hidden", k!==t.dataset.tab));
+}));
+document.querySelectorAll("#typeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
+  document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
+}));
+document.getElementById("run").addEventListener("click", render);
+document.getElementById("copyCust").addEventListener("click",()=>{
+  navigator.clipboard.writeText(document.getElementById("custText").textContent).then(()=>toast("説明文をコピーしました"));
+});
+document.getElementById("savePrice").addEventListener("click",()=>{ savePrices(); if(CUR){render();} toast("単価を保存しました"); });
+document.getElementById("resetPrice").addEventListener("click",()=>{
+  localStorage.removeItem("youheki_prices"); P=loadPrices(); renderPrice(); if(CUR){render();} toast("初期値に戻しました");
+});
+renderPrice();
+render();
+</script>
+</body>
+</html>
