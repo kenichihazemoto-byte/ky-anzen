@@ -78,7 +78,19 @@
   details{border:1px solid var(--line);border-radius:10px;padding:6px 12px;margin-top:8px;background:#fbfcfe}
   summary{font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;padding:4px 0}
   .fld small{font-size:11px;color:var(--sub);font-weight:500}
-  @media print{header,.tabs,.no-print{display:none!important}.wrap{padding:0}.card{box-shadow:none}}
+  #sheet{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--navy);padding-bottom:8px;margin-bottom:6px;gap:10px}
+  .sheet-title{font-size:18px;font-weight:800;color:var(--navy)}
+  .sheet-meta{font-size:11.5px;color:var(--sub);text-align:right;line-height:1.5}
+  .sheet-h{font-size:14px;color:var(--navy);border-left:4px solid var(--accent);padding-left:8px;margin:16px 0 6px}
+  .sheet-foot{font-size:11px;color:var(--sub);margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+  .stabtbl td.ok{color:var(--ok);font-weight:800}.stabtbl td.ng{color:var(--bad);font-weight:800}
+  @media print{
+    header,.tabs,.no-print,#tab-in,#tab-detail,#tab-cp,#tab-price{display:none!important}
+    body{background:#fff}.wrap{padding:0;max-width:none}
+    #sheet{border:none;border-radius:0;padding:0}
+    .secfig svg{max-height:260px}
+  }
 </style>
 </head>
 <body>
@@ -92,6 +104,7 @@
   <div class="tabs">
     <div class="tab on" data-tab="in">📐 条件・概算</div>
     <div class="tab" data-tab="detail">📋 数量・根拠</div>
+    <div class="tab" data-tab="zumen">📄 図面</div>
     <div class="tab" data-tab="cp">⚖️ CP比較</div>
     <div class="tab" data-tab="price">💴 単価設定</div>
   </div>
@@ -101,6 +114,7 @@
 <div class="wrap" id="tab-in">
   <div class="card">
     <h2 class="sec">1. 擁壁の条件（現地で測って入力）</h2>
+    <div class="fld"><label>工事名（図面用・任意）</label><input type="text" id="pjName" placeholder="例）○○様邸 外構擁壁工事"></div>
     <div class="row">
       <div class="fld"><label>擁壁の高さ（地上高 H）m<small>／地面から天端まで</small></label>
         <input type="number" id="Hg" value="2.0" min="0.5" max="6" step="0.1"></div>
@@ -113,6 +127,7 @@
       <span class="chip" data-k="L">L型RC（境界ぎりぎり）</span>
       <span class="chip" data-k="gravity">重力式（無筋）</span>
       <span class="chip" data-k="block">練積みブロック（間知）</span>
+      <span class="chip" data-k="recom">RECOM（大臣認定）</span>
     </div>
     <div id="slopeWrap" class="hidden">
       <label>法勾配（重力式・練積み）<small>／土質・高さで決定</small></label>
@@ -134,7 +149,12 @@
         <div class="fld"><label>鉄筋許容応力 fsa（N/mm²）</label><input type="number" id="fsa" value="180" min="140" max="210" step="5"></div>
         <div class="fld"><label>かぶり（mm）</label><input type="number" id="cover" value="70" min="40" max="100" step="5"></div>
       </div>
-      <p class="muted">※ 概算用の簡易ランキン土圧＋片持ち梁モデル。本設計は構造計算書で確定します。</p>
+      <div class="row3">
+        <div class="fld"><label>基礎地盤 摩擦係数 μ<small>／重力式の滑動</small></label><input type="number" id="mu" value="0.6" min="0.3" max="0.8" step="0.05"></div>
+        <div class="fld"><label>許容支持力度 qa（kN/m²）</label><input type="number" id="qa" value="200" min="50" step="10"></div>
+        <div class="fld"><label>コンクリート単位重量 γc（kN/m³）</label><input type="number" id="gc" value="23" min="20" max="24" step="0.5"></div>
+      </div>
+      <p class="muted">※ 概算用の簡易ランキン土圧＋片持ち梁モデル。重力式は滑動・転倒・支持力の安定計算を併記。本設計は構造計算書で確定します。</p>
     </details>
     <button class="btn btn-primary" id="run">🧮 概算する</button>
   </div>
@@ -157,7 +177,7 @@
       <h2 class="sec">3. 顧客説明サマリ（コピーして使える）</h2>
       <div class="outbox" id="custText">—</div>
       <button class="btn btn-sub" id="copyCust">📋 説明文をコピー</button>
-      <button class="btn btn-ghost no-print" onclick="window.print()">🖨 印刷 / PDF保存</button>
+      <button class="btn btn-ghost no-print" onclick="openSheetPrint()">🖨 図面・数量表をPDFで保存</button>
     </div>
   </div>
 </div>
@@ -174,10 +194,35 @@
     <table class="tbl" id="rebarTbl"><tbody></tbody></table>
     <p class="muted" id="rebarNote"></p>
   </div>
+  <div class="card" id="stabCard" style="display:none">
+    <h2 class="sec">重力式 安定計算（滑動・転倒・支持力）</h2>
+    <div id="stabBody"></div>
+  </div>
   <div class="card">
-    <h2 class="sec">数量拾い＋金額（現場打ちRC）</h2>
+    <h2 class="sec">数量拾い＋金額</h2>
     <table class="tbl" id="qtyTbl"><tbody></tbody></table>
     <p class="muted">単価は「💴 単価設定」タブで九州シンセイ単価に差し替えできます。ロス・端数は概算値です。</p>
+  </div>
+</div>
+
+<!-- ============ 図面タブ ============ -->
+<div class="wrap hidden" id="tab-zumen">
+  <div class="card no-print">
+    <p class="muted">「概算する」を押すと、展開図・断面図・数量表を作図します。下のボタンで印刷ダイアログ→「PDFに保存」で図面PDFを出力できます。</p>
+    <button class="btn btn-primary" id="printSheet">📄 図面・数量表をPDF出力（印刷）</button>
+  </div>
+  <div id="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="shTitle">擁壁 概算図</div>
+      <div class="sheet-meta" id="shMeta"></div>
+    </div>
+    <h3 class="sheet-h">展開図（正面）</h3>
+    <div class="secfig" id="elevfig"></div>
+    <h3 class="sheet-h">断面図 A–A</h3>
+    <div class="secfig" id="secfig2"></div>
+    <h3 class="sheet-h">数量表</h3>
+    <table class="tbl" id="qtyTbl2"><tbody></tbody></table>
+    <div class="sheet-foot">ハゼモト建設 ／ 本図は現地概算です。地盤・境界・排水等により本設計（構造計算）で確定します。</div>
   </div>
 </div>
 
@@ -226,6 +271,8 @@ const DEFAULT_PRICES = {
   joint:      {label:"伸縮目地（1箇所あたり）",      unit:"円/箇所",v:6000,  grp:"付帯"},
   masonry:    {label:"練積み材工（間知ブロック・胴込/裏込コン込）",unit:"円/m²",v:38000,grp:"練積み"},
   masonry_base:{label:"練積み 基礎コンクリート（材工）",unit:"円/m³", v:22000, grp:"練積み"},
+  recom_wall: {label:"RECOM壁体 材工（配筋・充填コン込／要見積）",unit:"円/m²",v:45000,grp:"RECOM"},
+  recom_base: {label:"RECOM 基礎スラブ（現場打ちRC 材工）",unit:"円/m",  v:28000,grp:"RECOM"},
   overhead:   {label:"諸経費（現場管理＋一般管理）", unit:"%",      v:15,    grp:"経費"},
   // CP（プレキャストL型）関連
   cp_h10:     {label:"CP製品 L型 H1.0以下",        unit:"円/m",   v:22000, grp:"CP製品"},
@@ -268,13 +315,15 @@ let CUR=null;
 function calc(){
   const Hg=+val("Hg"), L=+val("L"), Df=Math.max(0.35,+val("Df"));
   const phi=+val("phi"), gamma=+val("gamma"), q=+val("q"), fsa=+val("fsa"), cover=+val("cover")/1000;
+  const mu=+val("mu"), qa=+val("qa"), gc=+val("gc");
   const type=document.querySelector("#typeChips .chip.on").dataset.k;
   const slope=+(document.querySelector("#slopeChips .chip.on").dataset.n);
   const H = Hg + Df;                       // 全高（底版下端〜天端）
   let c;
   if(type==="invT"||type==="L") c=calcRC({Hg,L,Df,H,type,phi,gamma,q,fsa,cover});
-  else if(type==="gravity")     c=calcGravity({Hg,L,Df,H,slope});
-  else                          c=calcBlock({Hg,L,Df,H,slope});
+  else if(type==="gravity")     c=calcGravity({Hg,L,Df,H,slope,phi,gamma,q,mu,qa,gc});
+  else if(type==="block")       c=calcBlock({Hg,L,Df,H,slope});
+  else                          c=calcRecom({Hg,L,Df,H,phi});
   c.type=type; c.Hg=Hg; c.L=L; c.Df=Df; c.H=H;
   let direct=0; c.items.forEach(it=> direct+= it[3]*it[4]);
   c.direct=direct; c.oh=direct*P.overhead.v/100; c.total=direct+c.oh;
@@ -334,13 +383,30 @@ function calcRC(o){
     dimline:`断面：底版幅 B=${num(B)}m ／ 竪壁高 ${num(Hw)}m ／ 壁厚 ${Math.round(ttop*1000)}→${Math.round(t1*1000)}mm ／ 底版厚 ${Math.round(tb*1000)}mm`};
 }
 
-/* ---- 重力式（無筋コンクリート台形） ---- */
+/* ---- 重力式（無筋コンクリート台形）＋安定計算 ---- */
 function calcGravity(o){
-  const {Hg,L,Df,H,slope}=o;
+  const {Hg,L,Df,H,slope,phi,gamma,q,mu,qa,gc}=o;
   const btop=Math.max(0.30,r05(0.15*H));
-  const B=r05(btop+slope*H);                 // 背面法勾配で下端幅
-  const A=(btop+B)/2*H;                        // 断面積 m²/m
-  const Vc=A*L, concQ=Vc*1.03;
+  // ---- 安定計算（1m当り・つま先まわり／ランキン土圧）----
+  const Ka=Math.pow(Math.tan((45-phi/2)*Math.PI/180),2);
+  const Pas=0.5*Ka*gamma*H*H, Paq=Ka*q*H, Ph=Pas+Paq, Mo=Pas*(H/3)+Paq*(H/2);
+  function stabOf(B){
+    const A1=btop*H, x1=btop/2;                          // 前面矩形（コンクリート）
+    const A2=0.5*(B-btop)*H, x2=btop+(B-btop)/3;         // 背面三角（コンクリート）
+    const Wc=(A1+A2)*gc, xw=(A1*x1+A2*x2)/(A1+A2);
+    const As=0.5*(B-btop)*H, xs=btop+2*(B-btop)/3, Ws=As*gamma; // 背面法上の土くさび
+    const SV=Wc+Ws, Mr=Wc*xw+Ws*xs;
+    const FsSlide=(mu*SV)/Ph, FsOver=Mr/Mo, xR=(Mr-Mo)/SV, e=B/2-xR;
+    const qmax=SV/B*(1+6*e/B), qmin=SV/B*(1-6*e/B);
+    const okS=FsSlide>=1.5, okO=FsOver>=1.5, okE=Math.abs(e)<=B/6, okQ=qmax<=qa&&qmin>=0;
+    return {Ka,Ph,SV,FsSlide,FsOver,e,eLim:B/6,qmax,qmin,qa,okS,okO,okE,okQ,okAll:okS&&okO&&okE&&okQ};
+  }
+  // 底版幅は法勾配ぶんで初期化し、安定を満たすよう自動拡幅（上限 1.2H）
+  let B=r05(btop+slope*H), stab=stabOf(B), guard=0;
+  while(!stab.okAll && B<1.2*H && guard<60){ B=r05(B+0.05); stab=stabOf(B); guard++; }
+  const okAll=stab.okAll, FsSlide=stab.FsSlide, FsOver=stab.FsOver, qmax=stab.qmax;
+  const effSlope=Math.round((B-btop)/H*100)/100;
+  const A=(btop+B)/2*H, Vc=A*L, concQ=Vc*1.03;
   const slant=Math.sqrt(H*H+(B-btop)*(B-btop));
   const Fa=(H+slant)*L;                        // 前面(垂直)＋背面(法)
   const excav=(B+1.0)*(Df+0.15)*L, struct=Vc+(B*0.10*L)+(B*0.05*L);
@@ -363,14 +429,16 @@ function calcGravity(o){
   const dims=[
     [`全高 H（地上${num(Hg)}＋根入れ${num(Df)}）`,`${num(H)} m`],
     ["天端幅",`${num(btop)} m`],["下端幅 B",`${num(B)} m`],
-    ["背面法勾配",`1:${slope}`],["断面積",`${num(A,2)} m²/m`],
+    ["背面法勾配",`1:${effSlope}${effSlope>slope?'（安定確保のため拡幅）':''}`],["断面積",`${num(A,2)} m²/m`],
   ];
   const kpis=[{n:`${num(concQ,1)} <small>m³</small>`,l:"生コン 数量"},{n:`${num(Fa,1)} <small>m²</small>`,l:"型枠 面積"},{n:`${num(A,2)} <small>m²/m</small>`,l:"断面積"},{n:`無筋`,l:"鉄筋"}];
   return {isRC:false, shape:"gravity", methodName:"重力式（無筋コンクリート）",
-    geo:{btop,B,slant}, Vc,Fa,rebarKg:0,ratio:null,concQ,groups:[],items,days,dims,kpis,
-    basisHTML:`無筋コンクリートの<b>自重で滑動・転倒に抵抗</b>する形式。断面は台形（天端${num(btop)}m→下端${num(B)}m）、断面積 A=${num(A,2)} m²/m。背面法勾配 1:${slope}。高さが増えるとコンクリート量が急増するため、概ね2〜3mまでが経済的です。`,
-    note:c=>`重力式は無筋。高さ3m超はコンクリート量が過大になりやすく、現場打ちRC（逆T/L型）が有利です。`,
-    dimline:`断面：台形 天端${num(btop)}m→下端${num(B)}m ／ 全高 ${num(H)}m ／ 法勾配 1:${slope}（無筋）`};
+    geo:{btop,B,slant}, Vc,Fa,rebarKg:0,ratio:null,concQ,groups:[],items,days,dims,kpis,stab,
+    basisHTML:`無筋コンクリートの<b>自重で滑動・転倒に抵抗</b>する形式。断面は台形（天端${num(btop)}m→下端${num(B)}m）、断面積 A=${num(A,2)} m²/m。背面法勾配 1:${slope}。安定計算（滑動・転倒・支持力）は下表のとおり。`,
+    note:c=> okAll
+      ? `安定計算：滑動 Fs=${num(FsSlide,2)}／転倒 Fs=${num(FsOver,2)}／支持力 qmax=${num(qmax,0)}≦${qa} kN/m² いずれもOK${effSlope>slope?`（下端幅を ${num(B)}m まで自動拡幅）`:''}。高さ3m超は生コン量が増えRCが有利になりがちです。`
+      : `安定NG：${[!stab.okS?'滑動':'',!stab.okO?'転倒':'',!stab.okE?'偏心(e>B/6)':'',!stab.okQ?'支持力':''].filter(Boolean).join('・')} が不足（下端幅上限まで拡幅済）。地盤改良／現場打ちRCをご検討ください。`,
+    dimline:`断面：台形 天端${num(btop)}m→下端${num(B)}m ／ 全高 ${num(H)}m ／ 法勾配 1:${slope}（無筋）／ 安定 ${okAll?'OK':'NG'}`};
 }
 
 /* ---- 練積み（間知ブロック） ---- */
@@ -404,6 +472,44 @@ function calcBlock(o){
     basisHTML:`間知ブロックを勾配 1:${slope} で練積み。面積 ${num(area,1)} m²（法長 ${num(slant)}m×延長 ${num(L)}m）。材工単価は<b>間知ブロック＋胴込・裏込めコンクリート込</b>の想定です。宅地造成の練積み造は原則 高さ5m以下。勾配は土質・高さで決まります（本ツールは選択値）。`,
     note:c=>`練積みは型枠・鉄筋なし・面積(㎡)ベースの積算。勾配・下端厚は宅造法の基準に沿って本設計で確定してください。`,
     dimline:`練積み：勾配 1:${slope} ／ 法長 ${num(slant)}m ／ 面積 ${num(area,1)}㎡ ／ 下端厚 ${Math.round(tbtm*1000)}mm`};
+}
+
+/* ---- RECOM（シンセイ 国土交通大臣認定擁壁） ---- */
+function calcRecom(o){
+  const {Hg,L,Df,H,phi}=o;
+  const dan=Math.min(14,Math.max(3,Math.ceil(Hg/0.25)));  // ユニット約0.25m/段（概算）
+  let type_,thick;
+  if(dan<=4){type_="E";thick=150;}
+  else if(dan<=6){type_="L";thick=180;}
+  else if(dan<=9){type_="L";thick=200;}
+  else {type_="P";thick=220;}
+  const over=Hg>2.75;
+  const area=H*L;                                          // 壁面積（垂直擁壁）
+  const baseW=r05(thick/1000+0.35), baseT=0.35, Vbase=baseW*baseT*L, concQ=Vbase*1.03;
+  const backgravel=0.30*Hg*L;                              // 透水層
+  const excav=(baseW+1.0)*(Df+0.15)*L, backfill=excav*0.5, haul=excav-backfill, weep=Math.max(1,Math.ceil(area/3));
+  const items=[
+    ["RECOM","RECOMユニット壁体 材工（配筋・充填コン込／要見積）",`${num(area,1)} m²`,area,P.recom_wall.v],
+    ["RECOM","基礎スラブ（現場打ちRC 材工）",`${num(L)} m`,L,P.recom_base.v],
+    ["RECOM","透水層（裏込め砕石）",`${num(backgravel)} m³`,backgravel,P.backgravel.v],
+    ["付帯","床掘・掘削",`${num(excav)} m³`,excav,P.excav.v],
+    ["付帯","残土運搬処分",`${num(haul)} m³`,haul,P.haul.v],
+    ["付帯","埋戻し",`${num(backfill)} m³`,backfill,P.backfill.v],
+    ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
+  ];
+  const days=2+Math.ceil(area/10)+2;
+  const dims=[
+    [`全高 H（地上${num(Hg)}＋根入れ${num(Df)}）`,`${num(H)} m`],
+    ["組積段数（約0.2m/段）",`${dan} 段`],["RECOMタイプ",type_],
+    ["ユニット厚",`${thick} mm`],["壁面積",`${num(area,1)} m²`],
+    ["基礎スラブ 幅×厚",`${num(baseW)} × ${num(baseT)} m`],
+  ];
+  const kpis=[{n:`${num(area,1)} <small>m²</small>`,l:"壁面積"},{n:`${dan} <small>段</small>`,l:"組積段数"},{n:`${type_}/${thick}`,l:"タイプ/厚mm"},{n:`${num(Vbase,1)} <small>m³</small>`,l:"基礎コン"}];
+  return {isRC:false, shape:"recom", methodName:"RECOM（大臣認定擁壁）",
+    geo:{thick,dan,type_,baseW,baseT}, Vc:Vbase,Fa:0,rebarKg:0,ratio:null,concQ,area,groups:[],items,days,dims,kpis,
+    basisHTML:`シンセイ「RECOMシステム」＝<b>国土交通大臣認定の垂直擁壁</b>（型枠状ユニット＋配筋＋充填コンクリートの合成壁）。<b>盛土規制法対応</b>。高さ ${num(Hg)}m ≒ ${dan}段 → タイプ${type_}・ユニット厚${thick}mm（製造150/180/200/220）。認定は高低差2.75mまで。`,
+    note:c=> (over?`高低差2.75m超は認定範囲外の可能性（要相談）。`:``)+`RECOMは大臣認定のため要施工指導＋別途見積。壁体単価は仮値です（シンセイの施工・積算ガイドで確定）。土質(φ=${phi}°)・支持力に応じ認定設計No.を選定します。`,
+    dimline:`RECOM：${dan}段・タイプ${type_}・ユニット厚${thick}mm ／ 壁面積 ${num(area,1)}㎡（大臣認定・盛土規制法対応）`};
 }
 function g(name,dia,pitch,n,len,w){ return {name,dia,pitch,n,len,kg:n*len*w}; }
 
@@ -458,9 +564,47 @@ function render(){
      ${c.methodName}との差 <b style="color:${meWin?'var(--ok)':'var(--bad)'}">${meWin?c.methodName+"が":"CPが"} ${yen(Math.abs(diff))} 安い</b>。詳しくは「⚖️ CP比較」タブ。</div>`;
 
   set("custText", customerText(c), true);
+  // 図面シート
+  document.getElementById("secfig2").innerHTML=drawSection(c);
+  document.getElementById("elevfig").innerHTML=drawElevation(c);
+  set("shTitle", (document.getElementById("pjName").value.trim()||"擁壁 概算図"));
+  set("shMeta", `工法：${c.methodName}<br>地上高 ${num(c.Hg)}m × 延長 ${num(c.L)}m ／ 概算 ${yen(c.total)}（税抜）`);
+  document.getElementById("qtyTbl2").innerHTML=buildQtyTable(c);
   renderDetail(c);
   renderCP(c);
   renderPrice();
+}
+
+/* 展開図（正面） */
+function drawElevation(c){
+  const L=c.L, Hg=c.Hg, Df=c.Df, W=680, Hpx=250, padX=44, padTop=30, padBot=54;
+  const availW=W-2*padX, availH=Hpx-padTop-padBot;
+  const scX=availW/L, scH=availH/(Hg+Df);
+  const x0=padX, topY=padTop, glY=padTop+scH*Hg, baseY=padTop+scH*(Hg+Df);
+  const Xr=xm=>x0+xm*scX;
+  const jn=Math.max(1,Math.ceil(L/10));                 // 伸縮目地の区間数
+  const weepN=Math.max(1,Math.round(L/2));              // 水抜き（約2mピッチ）
+  let joints="";
+  for(let i=1;i<jn;i++){ const x=Xr(L*i/jn); joints+=`<line x1="${x.toFixed(1)}" y1="${topY}" x2="${x.toFixed(1)}" y2="${baseY.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="3 3"/>`; }
+  let weeps="";
+  for(let i=0;i<weepN;i++){ const x=Xr(L*(i+0.5)/weepN); weeps+=`<circle cx="${x.toFixed(1)}" cy="${(glY-6).toFixed(1)}" r="3" fill="none" stroke="#0369a1" stroke-width="1.4"/>`; }
+  const cut=Xr(L*0.32);
+  return `<svg viewBox="0 0 ${W} ${Hpx}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+    <rect x="0" y="0" width="${W}" height="${Hpx}" fill="#fbfcfe"/>
+    <rect x="${x0}" y="${topY}" width="${(availW).toFixed(1)}" height="${(glY-topY).toFixed(1)}" fill="#dbe4ee" stroke="#1b3a5b" stroke-width="1.6"/>
+    <rect x="${x0}" y="${glY.toFixed(1)}" width="${(availW).toFixed(1)}" height="${(baseY-glY).toFixed(1)}" fill="#eef2f7" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    ${joints}${weeps}
+    <line x1="${x0-14}" y1="${glY.toFixed(1)}" x2="${(x0+availW+14).toFixed(1)}" y2="${glY.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text x="${(x0+availW+16).toFixed(1)}" y="${(glY+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
+    <line x1="${cut.toFixed(1)}" y1="${topY-6}" x2="${cut.toFixed(1)}" y2="${(baseY+6).toFixed(1)}" stroke="#c0392b" stroke-width="1.2" stroke-dasharray="6 3"/>
+    <text x="${(cut+3).toFixed(1)}" y="${(topY+2).toFixed(1)}" font-size="10" fill="#c0392b" font-weight="700">A</text>
+    <text x="${(cut+3).toFixed(1)}" y="${(baseY+4).toFixed(1)}" font-size="10" fill="#c0392b" font-weight="700">A</text>
+    <line x1="${x0}" y1="${(baseY+16).toFixed(1)}" x2="${(x0+availW).toFixed(1)}" y2="${(baseY+16).toFixed(1)}" stroke="#334155"/>
+    <text x="${(x0+availW/2).toFixed(1)}" y="${(baseY+30).toFixed(1)}" font-size="11" fill="#334155" text-anchor="middle">延長 L=${num(L)}m ／ 目地 ${jn}区間・水抜き ${weepN}箇所</text>
+    <line x1="${(x0-14).toFixed(1)}" y1="${topY}" x2="${(x0-14).toFixed(1)}" y2="${glY.toFixed(1)}" stroke="#334155"/>
+    <text x="${(x0-18).toFixed(1)}" y="${((topY+glY)/2).toFixed(1)}" font-size="10" fill="#334155" text-anchor="end" transform="rotate(-90 ${(x0-18).toFixed(1)} ${((topY+glY)/2).toFixed(1)})">地上高 ${num(Hg)}m</text>
+    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">展開図（○=水抜き, 破線=伸縮目地）</text>
+  </svg>`;
 }
 
 const SVGW=340, SVGH=230, SVGPAD=42;
@@ -553,7 +697,15 @@ function renderDetail(c){
       : "練積みは鉄筋・型枠なし。間知ブロック＋胴込・裏込めコンクリートで一体化します。";
   }
 
+  // 安定計算カード（重力式のみ）
+  const stabCard=document.getElementById("stabCard");
+  if(c.stab){ stabCard.style.display=""; document.getElementById("stabBody").innerHTML=buildStabTable(c.stab); }
+  else stabCard.style.display="none";
+
   // 数量・金額
+  document.getElementById("qtyTbl").innerHTML=buildQtyTable(c);
+}
+function buildQtyTable(c){
   let q=`<tbody><tr><th>区分</th><th>項目</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr>`;
   let cur="";
   c.items.forEach(it=>{ if(it[0]!==cur){cur=it[0]; q+=`<tr class="g"><td colspan="5">${cur}</td></tr>`;}
@@ -561,12 +713,25 @@ function renderDetail(c){
   q+=`<tr class="sum"><td colspan="4">直接工事費</td><td class="r">${yen(c.direct)}</td></tr>`;
   q+=`<tr><td></td><td>諸経費</td><td class="r c" colspan="2">${P.overhead.v}%</td><td class="r">${yen(c.oh)}</td></tr>`;
   q+=`<tr class="grand"><td colspan="4">合計（税抜）／ 工期目安 約${c.days}日</td><td class="r">${yen(c.total)}</td></tr></tbody>`;
-  document.getElementById("qtyTbl").innerHTML=q;
+  return q;
+}
+function buildStabTable(s){
+  const jud=ok=>ok?`<td class="c ok">OK</td>`:`<td class="c ng">NG</td>`;
+  return `<table class="tbl stabtbl"><tbody>
+    <tr><th>照査項目</th><th class="r">計算値</th><th class="r">許容</th><th class="c">判定</th></tr>
+    <tr><td>滑動 Fs ＝ μΣV/ΣH</td><td class="r">${num(s.FsSlide,2)}</td><td class="r">≧ 1.5</td>${jud(s.okS)}</tr>
+    <tr><td>転倒 Fs ＝ Mr/Mo</td><td class="r">${num(s.FsOver,2)}</td><td class="r">≧ 1.5</td>${jud(s.okO)}</tr>
+    <tr><td>偏心量 e</td><td class="r">${num(s.e,3)} m</td><td class="r">≦ B/6=${num(s.eLim,3)}</td>${jud(s.okE)}</tr>
+    <tr><td>最大地盤反力 qmax</td><td class="r">${num(s.qmax,0)}</td><td class="r">≦ ${s.qa} kN/m²</td>${jud(s.okQ)}</tr>
+    <tr class="sum"><td colspan="3">総合判定</td>${jud(s.okAll)}</tr>
+  </tbody></table>
+  <p class="muted">水平合力 ΣH=${num(s.Ph,1)} kN/m、鉛直合力 ΣV=${num(s.SV,1)} kN/m、qmin=${num(s.qmin,0)} kN/m²。つま先まわりの1m当り概算（ランキン土圧・背面法上の土くさび自重を考慮）。${s.okAll?'':'<b style="color:#c0392b">NG項目は断面拡大／地盤改良／RC化で対応。</b>'}</p>`;
 }
 const METHOD_BULLETS={
   rc:["自社の鉄筋・型枠で内製化","高さ・線形の自由度が高い","養生期間が必要","数量根拠が明確（本ツール）"],
   gravity:["無筋でシンプル・型枠のみ","コンクリート量が多い","低い擁壁向き（〜2〜3m）","養生期間が必要"],
   block:["間知ブロックで景観に馴染む","型枠・鉄筋が不要","勾配ぶんの用地が必要","5m以下・宅造基準に留意"],
+  recom:["大臣認定・盛土規制法対応","垂直で用地を有効活用","要施工指導＋別途見積","高低差2.75mまで認定"],
 };
 
 function renderCP(c){
@@ -637,7 +802,7 @@ function toast(m){const t=document.getElementById("toast");t.textContent=m;t.cla
 
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click",()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
-  ["in","detail","cp","price"].forEach(k=> document.getElementById("tab-"+k).classList.toggle("hidden", k!==t.dataset.tab));
+  ["in","detail","zumen","cp","price"].forEach(k=> document.getElementById("tab-"+k).classList.toggle("hidden", k!==t.dataset.tab));
 }));
 document.querySelectorAll("#typeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
   document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
@@ -647,7 +812,9 @@ document.querySelectorAll("#typeChips .chip").forEach(ch=> ch.addEventListener("
 document.querySelectorAll("#slopeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
   document.querySelectorAll("#slopeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
 }));
+function openSheetPrint(){ if(!CUR){render();} document.querySelector('.tab[data-tab="zumen"]').click(); setTimeout(()=>window.print(),60); }
 document.getElementById("run").addEventListener("click", render);
+document.getElementById("printSheet").addEventListener("click", openSheetPrint);
 document.getElementById("copyCust").addEventListener("click",()=>{
   navigator.clipboard.writeText(document.getElementById("custText").textContent).then(()=>toast("説明文をコピーしました"));
 });
