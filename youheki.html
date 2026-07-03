@@ -83,8 +83,12 @@
 </head>
 <body>
 <header>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:5px;color:#fff;text-decoration:none;font-size:12px;font-weight:600;opacity:.9">↩ 朝礼安全・KYツール</a>
+    <a href="saiko.html" style="display:inline-flex;align-items:center;gap:5px;color:#fff;text-decoration:none;font-size:12px;font-weight:600;opacity:.9">☀️ 採光計算アシスタント</a>
+  </div>
   <h1>🧱 擁壁・外構 概算ツール</h1>
-  <div class="sub">ハゼモト建設 ／ 高さを入れれば 配筋・鉄筋重量・型枠㎡・生コン量・金額根拠を自動算出（現場打ちRC × CP比較）</div>
+  <div class="sub">ハゼモト建設 ／ 高さを入れれば 配筋・鉄筋重量・型枠㎡・生コン量・金額根拠を自動算出（現場打ちRC／重力式／練積み × CP比較）</div>
   <div class="tabs">
     <div class="tab on" data-tab="in">📐 条件・概算</div>
     <div class="tab" data-tab="detail">📋 数量・根拠</div>
@@ -105,8 +109,18 @@
     </div>
     <label>型式</label>
     <div class="chips" id="typeChips">
-      <span class="chip on" data-k="invT">逆T型（つま先＋かかと）</span>
-      <span class="chip" data-k="L">L型（境界ぎりぎり・かかとのみ）</span>
+      <span class="chip on" data-k="invT">逆T型RC（つま先＋かかと）</span>
+      <span class="chip" data-k="L">L型RC（境界ぎりぎり）</span>
+      <span class="chip" data-k="gravity">重力式（無筋）</span>
+      <span class="chip" data-k="block">練積みブロック（間知）</span>
+    </div>
+    <div id="slopeWrap" class="hidden">
+      <label>法勾配（重力式・練積み）<small>／土質・高さで決定</small></label>
+      <div class="chips" id="slopeChips">
+        <span class="chip" data-n="0.3">3分（1:0.3・急）</span>
+        <span class="chip on" data-n="0.5">5分（1:0.5・標準）</span>
+        <span class="chip" data-n="1.0">1割（1:1.0・緩）</span>
+      </div>
     </div>
     <details>
       <summary>土質・設計条件（ふつうはこのままでOK）</summary>
@@ -127,17 +141,13 @@
 
   <div id="summary" class="hidden">
     <div class="card">
-      <h2 class="sec">2. 概算サマリ（現場打ちRC擁壁）</h2>
+      <h2 class="sec" id="sumTitle">2. 概算サマリ</h2>
       <div class="kpi">
-        <div class="box big"><div class="n" id="kTotal">—</div><div class="l">現場打ちRC 総額（税抜・諸経費込）</div></div>
+        <div class="box big"><div class="n" id="kTotal">—</div><div class="l" id="kTotalL">総額（税抜・諸経費込）</div></div>
         <div class="box"><div class="n" id="kUnit">—</div><div class="l">当り単価（円/m）</div></div>
       </div>
-      <div class="kpi" style="margin-top:4px">
-        <div class="box"><div class="n" id="kRebar">—</div><div class="l">鉄筋 総重量</div></div>
-        <div class="box"><div class="n" id="kForm">—</div><div class="l">型枠 面積</div></div>
-        <div class="box"><div class="n" id="kConc">—</div><div class="l">生コン 数量</div></div>
-        <div class="box"><div class="n" id="kRatio">—</div><div class="l">鉄筋量（kg/m³）</div></div>
-      </div>
+      <div class="kpi" style="margin-top:4px" id="kpiRow"></div>
+      <div id="methodNote"></div>
       <div class="secfig" id="secfig"></div>
       <div id="dimline" class="muted" style="text-align:center"></div>
       <div id="cpMini"></div>
@@ -159,7 +169,7 @@
     <table class="tbl" id="dimTbl"><tbody><tr><td class="muted">「概算する」を押してください</td></tr></tbody></table>
   </div>
   <div class="card">
-    <h2 class="sec">配筋の検討（見積根拠）</h2>
+    <h2 class="sec" id="rcTitle">配筋の検討（見積根拠）</h2>
     <div id="rcBasis" class="muted">—</div>
     <table class="tbl" id="rebarTbl"><tbody></tbody></table>
     <p class="muted" id="rebarNote"></p>
@@ -214,6 +224,8 @@ const DEFAULT_PRICES = {
   backgravel: {label:"裏込め砕石（透水層）",         unit:"円/m³",  v:6000,  grp:"付帯"},
   weep:       {label:"水抜きパイプ VP50",           unit:"円/本",  v:1500,  grp:"付帯"},
   joint:      {label:"伸縮目地（1箇所あたり）",      unit:"円/箇所",v:6000,  grp:"付帯"},
+  masonry:    {label:"練積み材工（間知ブロック・胴込/裏込コン込）",unit:"円/m²",v:38000,grp:"練積み"},
+  masonry_base:{label:"練積み 基礎コンクリート（材工）",unit:"円/m³", v:22000, grp:"練積み"},
   overhead:   {label:"諸経費（現場管理＋一般管理）", unit:"%",      v:15,    grp:"経費"},
   // CP（プレキャストL型）関連
   cp_h10:     {label:"CP製品 L型 H1.0以下",        unit:"円/m",   v:22000, grp:"CP製品"},
@@ -257,68 +269,42 @@ function calc(){
   const Hg=+val("Hg"), L=+val("L"), Df=Math.max(0.35,+val("Df"));
   const phi=+val("phi"), gamma=+val("gamma"), q=+val("q"), fsa=+val("fsa"), cover=+val("cover")/1000;
   const type=document.querySelector("#typeChips .chip.on").dataset.k;
-
+  const slope=+(document.querySelector("#slopeChips .chip.on").dataset.n);
   const H = Hg + Df;                       // 全高（底版下端〜天端）
-  const tb = Math.max(0.30, r05(0.12*H));  // 底版厚
-  const t1 = Math.max(0.25, r05(0.11*H));  // 壁厚（底部）
-  const ttop = Math.min(0.30, Math.max(0.20, r05(0.07*H))); // 壁厚（天端）
-  let B  = Math.max(1.0, r05(0.60*H));     // 底版幅
-  const Hw = H - tb;                        // 竪壁高
-  let toe = (type==="invT") ? r05(B/3) : 0.10;
-  let heel = B - toe - t1;
+  let c;
+  if(type==="invT"||type==="L") c=calcRC({Hg,L,Df,H,type,phi,gamma,q,fsa,cover});
+  else if(type==="gravity")     c=calcGravity({Hg,L,Df,H,slope});
+  else                          c=calcBlock({Hg,L,Df,H,slope});
+  c.type=type; c.Hg=Hg; c.L=L; c.Df=Df; c.H=H;
+  let direct=0; c.items.forEach(it=> direct+= it[3]*it[4]);
+  c.direct=direct; c.oh=direct*P.overhead.v/100; c.total=direct+c.oh;
+  c.cp=calcCP(Hg,L,Df);
+  CUR=c; return c;
+}
+
+/* ---- 逆T型/L型 RC擁壁 ---- */
+function calcRC(o){
+  const {Hg,L,Df,H,type,phi,gamma,q,fsa,cover}=o;
+  const tb=Math.max(0.30,r05(0.12*H)), t1=Math.max(0.25,r05(0.11*H)), ttop=Math.min(0.30,Math.max(0.20,r05(0.07*H)));
+  let B=Math.max(1.0,r05(0.60*H)); const Hw=H-tb;
+  let toe=(type==="invT")?r05(B/3):0.10, heel=B-toe-t1;
   if(heel<0.20){ heel=0.20; B=toe+t1+heel; }
-
-  // --- 土圧・竪壁配筋 ---
-  const Ka = Math.pow(Math.tan((45-phi/2)*Math.PI/180),2);
-  const Mstem = Ka*gamma*Math.pow(Hw,3)/6 + Ka*q*Math.pow(Hw,2)/2;   // kN·m/m
-  const dStem = Math.max(0.08, t1 - cover - 0.008);
-  const AsStem = Mstem*1e6/(fsa*0.875*dStem*1000);                   // mm²/m
-  const barStem = pickBar(AsStem);
-
-  // --- 底版配筋（かかと側 簡易片持ち） ---
-  const Mbase = (gamma*Hw + q)*Math.pow(heel,2)/2;                   // kN·m/m
-  const dBase = Math.max(0.08, tb - cover - 0.008);
-  const AsBase = Mbase*1e6/(fsa*0.875*dBase*1000);
-  const barBase = pickBar(AsBase);
-
-  // --- 数量（延長 L 全体） ---
-  const Vc = (((ttop+t1)/2)*Hw + tb*B) * L;                          // 生コン m³
-  const Fa = (2*Hw + 2*tb) * L;                                       // 型枠 m²
-
-  // 鉄筋グループ（本数・単長・重量）
+  const Ka=Math.pow(Math.tan((45-phi/2)*Math.PI/180),2);
+  const Mstem=Ka*gamma*Math.pow(Hw,3)/6 + Ka*q*Math.pow(Hw,2)/2;
+  const dStem=Math.max(0.08,t1-cover-0.008), AsStem=Mstem*1e6/(fsa*0.875*dStem*1000), barStem=pickBar(AsStem);
+  const Mbase=(gamma*Hw+q)*Math.pow(heel,2)/2, dBase=Math.max(0.08,tb-cover-0.008), AsBase=Mbase*1e6/(fsa*0.875*dBase*1000), barBase=pickBar(AsBase);
+  const Vc=(((ttop+t1)/2)*Hw+tb*B)*L, Fa=(2*Hw+2*tb)*L;
   const groups=[];
-  // 竪壁 主筋（背面・縦）
-  {const s=barStem.s/1000, n=Math.round(L/s), len=Hw+tb+0.30, w=BAR[barStem.d].w;
-   groups.push(g("竪壁 主筋（背面・縦）",barStem.d,`@${barStem.s}`,n,len,w));}
-  // 竪壁 前面 縦筋
-  {const sp=Math.min(0.30,2*barStem.s/1000), n=Math.round(L/sp), len=Hw+0.20;
-   groups.push(g("竪壁 前面 縦筋",  "D13",`@${Math.round(sp*1000)}`,n,len,BAR.D13.w));}
-  // 竪壁 配力筋（横・両面）
-  {const layers=Math.ceil(Hw/0.25), n=layers*2, len=L*1.05;
-   groups.push(g("竪壁 配力筋（横・両面）","D13","@250",n,len,BAR.D13.w));}
-  // 底版 主筋（横断・上下）
-  {const s=barBase.s/1000, n=Math.round(L/s)*2, len=B+0.15, w=BAR[barBase.d].w;
-   groups.push(g("底版 主筋（横断・上下）",barBase.d,`@${barBase.s}`,n,len,w));}
-  // 底版 配力筋（延長・上下）
-  {const layers=Math.ceil(B/0.25), n=layers*2, len=L*1.05;
-   groups.push(g("底版 配力筋（延長・上下）","D13","@250",n,len,BAR.D13.w));}
-  const rebarKg = groups.reduce((s,x)=>s+x.kg,0);
-  const ratio = rebarKg/Vc;   // kg/m³
-
-  // 付帯数量
-  const digW = B + 1.0, digD = Df + 0.15;
-  const excav = digW*digD*L;
-  const struct = Vc + (B*0.10*L) + (B*0.05*L);       // 埋設体積概算
-  const backfill = Math.max(0, excav - struct)*0.9;
-  const haul = Math.max(0, excav - backfill);
-  const crushed = B*0.10*L;
-  const leveling = B*0.05*L;
-  const backgravel = 0.30*Hw*L;
-  const weep = Math.max(1, Math.ceil(Hg*L/3));
-  const joints = Math.max(1, Math.ceil(L/10));
-
-  // --- 金額（現場打ち） ---
-  const concQ = Vc*1.03;
+  {const s=barStem.s/1000,n=Math.round(L/s),len=Hw+tb+0.30,w=BAR[barStem.d].w; groups.push(g("竪壁 主筋（背面・縦）",barStem.d,`@${barStem.s}`,n,len,w));}
+  {const sp=Math.min(0.30,2*barStem.s/1000),n=Math.round(L/sp),len=Hw+0.20; groups.push(g("竪壁 前面 縦筋","D13",`@${Math.round(sp*1000)}`,n,len,BAR.D13.w));}
+  {const layers=Math.ceil(Hw/0.25),n=layers*2,len=L*1.05; groups.push(g("竪壁 配力筋（横・両面）","D13","@250",n,len,BAR.D13.w));}
+  {const s=barBase.s/1000,n=Math.round(L/s)*2,len=B+0.15,w=BAR[barBase.d].w; groups.push(g("底版 主筋（横断・上下）",barBase.d,`@${barBase.s}`,n,len,w));}
+  {const layers=Math.ceil(B/0.25),n=layers*2,len=L*1.05; groups.push(g("底版 配力筋（延長・上下）","D13","@250",n,len,BAR.D13.w));}
+  const rebarKg=groups.reduce((s,x)=>s+x.kg,0), ratio=rebarKg/Vc;
+  const excav=(B+1.0)*(Df+0.15)*L, struct=Vc+(B*0.10*L)+(B*0.05*L);
+  const backfill=Math.max(0,excav-struct)*0.9, haul=Math.max(0,excav-backfill);
+  const crushed=B*0.10*L, leveling=B*0.05*L, backgravel=0.30*Hw*L, weep=Math.max(1,Math.ceil(Hg*L/3)), joints=Math.max(1,Math.ceil(L/10));
+  const concQ=Vc*1.03;
   const items=[
     ["躯体","生コン",       `${num(concQ)} m³`, concQ, P.concrete.v],
     ["躯体","ポンプ圧送",   `${num(concQ)} m³`, concQ, P.pump.v],
@@ -333,21 +319,91 @@ function calc(){
     ["付帯","水抜きパイプ", `${weep} 本`, weep, P.weep.v],
     ["付帯","伸縮目地",     `${joints} 箇所`, joints, P.joint.v],
   ];
-  let direct=0; items.forEach(it=> direct+= it[3]*it[4]);
-  const oh = direct*P.overhead.v/100;
-  const total = direct+oh;
+  const days=2+Math.ceil(rebarKg/500)+Math.ceil(Fa/16)+4+1;
+  const dims=[
+    [`全高 H（地上${num(Hg)}＋根入れ${num(Df)}）`,`${num(H)} m`],
+    ["底版幅 B",`${num(B)} m`],["├ つま先長",`${num(toe)} m`],["└ かかと長",`${num(heel)} m`],
+    ["底版厚 tb",`${Math.round(tb*1000)} mm`],["竪壁高 Hw",`${num(Hw)} m`],
+    ["壁厚（天端→底部）",`${Math.round(ttop*1000)} → ${Math.round(t1*1000)} mm`],
+  ];
+  const basisHTML=`土圧係数 Ka=${num(Ka,3)}（φ=${phi}°）。<br>・竪壁：曲げ M=${num(Mstem,1)} kN·m/m → 必要鉄筋量 As=${num(AsStem,0)} mm²/m → <b>${barStem.d}@${barStem.s}</b>（配置${num(barStem.prov,0)} mm²/m）<br>・底版：曲げ M=${num(Mbase,1)} kN·m/m → 必要As=${num(AsBase,0)} mm²/m → <b>${barBase.d}@${barBase.s}</b>（配置${num(barBase.prov,0)} mm²/m）`;
+  const kpis=[{n:`${num(rebarKg,0)} <small>kg</small>`,l:"鉄筋 総重量"},{n:`${num(Fa,1)} <small>m²</small>`,l:"型枠 面積"},{n:`${num(concQ,1)} <small>m³</small>`,l:"生コン 数量"},{n:`${num(ratio,0)} <small>kg/m³</small>`,l:"鉄筋量"}];
+  return {isRC:true, shape:"rc", methodName:type==="invT"?"現場打ちRC（逆T型）":"現場打ちRC（L型）",
+    geo:{B,tb,t1,ttop,Hw,toe,heel}, Vc,Fa,rebarKg,ratio,concQ,groups,items,days,dims,basisHTML,kpis,
+    barStem,barBase,Mstem,Mbase,AsStem,AsBase,Ka,phi,
+    dimline:`断面：底版幅 B=${num(B)}m ／ 竪壁高 ${num(Hw)}m ／ 壁厚 ${Math.round(ttop*1000)}→${Math.round(t1*1000)}mm ／ 底版厚 ${Math.round(tb*1000)}mm`};
+}
 
-  // --- 工期概算（日） ---
-  const rcDays = 2 + Math.ceil(rebarKg/500) + Math.ceil(Fa/16) + 4 + 1;
+/* ---- 重力式（無筋コンクリート台形） ---- */
+function calcGravity(o){
+  const {Hg,L,Df,H,slope}=o;
+  const btop=Math.max(0.30,r05(0.15*H));
+  const B=r05(btop+slope*H);                 // 背面法勾配で下端幅
+  const A=(btop+B)/2*H;                        // 断面積 m²/m
+  const Vc=A*L, concQ=Vc*1.03;
+  const slant=Math.sqrt(H*H+(B-btop)*(B-btop));
+  const Fa=(H+slant)*L;                        // 前面(垂直)＋背面(法)
+  const excav=(B+1.0)*(Df+0.15)*L, struct=Vc+(B*0.10*L)+(B*0.05*L);
+  const backfill=Math.max(0,excav-struct)*0.9, haul=Math.max(0,excav-backfill);
+  const crushed=B*0.10*L, leveling=B*0.05*L, backgravel=0.30*H*L, weep=Math.max(1,Math.ceil(Hg*L/3)), joints=Math.max(1,Math.ceil(L/10));
+  const items=[
+    ["躯体","生コン（無筋）",`${num(concQ)} m³`,concQ,P.concrete.v],
+    ["躯体","ポンプ圧送",`${num(concQ)} m³`,concQ,P.pump.v],
+    ["躯体","型枠 材工",`${num(Fa)} m²`,Fa,P.form.v],
+    ["付帯","床掘・掘削",`${num(excav)} m³`,excav,P.excav.v],
+    ["付帯","残土運搬処分",`${num(haul)} m³`,haul,P.haul.v],
+    ["付帯","埋戻し",`${num(backfill)} m³`,backfill,P.backfill.v],
+    ["付帯","基礎砕石",`${num(crushed)} m³`,crushed,P.crushed.v],
+    ["付帯","均しコン",`${num(leveling)} m³`,leveling,P.leveling.v],
+    ["付帯","裏込め砕石",`${num(backgravel)} m³`,backgravel,P.backgravel.v],
+    ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
+    ["付帯","伸縮目地",`${joints} 箇所`,joints,P.joint.v],
+  ];
+  const days=2+Math.ceil(Fa/16)+Math.ceil(Vc/12)+3;
+  const dims=[
+    [`全高 H（地上${num(Hg)}＋根入れ${num(Df)}）`,`${num(H)} m`],
+    ["天端幅",`${num(btop)} m`],["下端幅 B",`${num(B)} m`],
+    ["背面法勾配",`1:${slope}`],["断面積",`${num(A,2)} m²/m`],
+  ];
+  const kpis=[{n:`${num(concQ,1)} <small>m³</small>`,l:"生コン 数量"},{n:`${num(Fa,1)} <small>m²</small>`,l:"型枠 面積"},{n:`${num(A,2)} <small>m²/m</small>`,l:"断面積"},{n:`無筋`,l:"鉄筋"}];
+  return {isRC:false, shape:"gravity", methodName:"重力式（無筋コンクリート）",
+    geo:{btop,B,slant}, Vc,Fa,rebarKg:0,ratio:null,concQ,groups:[],items,days,dims,kpis,
+    basisHTML:`無筋コンクリートの<b>自重で滑動・転倒に抵抗</b>する形式。断面は台形（天端${num(btop)}m→下端${num(B)}m）、断面積 A=${num(A,2)} m²/m。背面法勾配 1:${slope}。高さが増えるとコンクリート量が急増するため、概ね2〜3mまでが経済的です。`,
+    note:c=>`重力式は無筋。高さ3m超はコンクリート量が過大になりやすく、現場打ちRC（逆T/L型）が有利です。`,
+    dimline:`断面：台形 天端${num(btop)}m→下端${num(B)}m ／ 全高 ${num(H)}m ／ 法勾配 1:${slope}（無筋）`};
+}
 
-  // --- CP（プレキャストL型） ---
-  const cp = calcCP(Hg,L,Df);
-
-  CUR={Hg,L,Df,type,H,tb,t1,ttop,B,Hw,toe,heel,Ka,phi,gamma,q,
-       Mstem,AsStem,barStem,Mbase,AsBase,barBase,
-       Vc,Fa,rebarKg,ratio,groups,concQ,excav,haul,backfill,crushed,leveling,backgravel,weep,joints,
-       items,direct,oh,total,rcDays,cp};
-  return CUR;
+/* ---- 練積み（間知ブロック） ---- */
+function calcBlock(o){
+  const {Hg,L,Df,H,slope}=o;
+  const slant=Math.sqrt(H*H+(slope*H)*(slope*H));   // 法長 = H√(1+勾配²)
+  const area=slant*L;                                // 練積み面積 m²
+  const tbtm=Math.min(0.70,Math.max(0.40,r05(0.40+0.10*(H-1)))); // 下端厚
+  const baseW=r05(tbtm+0.20), baseT=0.30;
+  const Vbase=baseW*baseT*L, Vgravel=0.30*slant*L, concQ=Vbase*1.03;
+  const excav=(baseW+1.0)*(Df+0.15)*L, backfill=excav*0.5, haul=excav-backfill, weep=Math.max(1,Math.ceil(area/3));
+  const items=[
+    ["練積み","練積み材工（間知ブロック・胴込/裏込コン込）",`${num(area,1)} m²`,area,P.masonry.v],
+    ["練積み","基礎コンクリート",`${num(Vbase)} m³`,Vbase,P.masonry_base.v],
+    ["練積み","裏込め砕石（栗石）",`${num(Vgravel)} m³`,Vgravel,P.backgravel.v],
+    ["付帯","床掘・掘削",`${num(excav)} m³`,excav,P.excav.v],
+    ["付帯","残土運搬処分",`${num(haul)} m³`,haul,P.haul.v],
+    ["付帯","埋戻し",`${num(backfill)} m³`,backfill,P.backfill.v],
+    ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
+  ];
+  const days=1+Math.ceil(area/8)+1;
+  const dims=[
+    [`全高 H（地上${num(Hg)}＋根入れ${num(Df)}）`,`${num(H)} m`],
+    ["法勾配",`1:${slope}`],["法長（1面）",`${num(slant)} m`],
+    ["練積み面積",`${num(area,1)} m²`],["下端厚",`${Math.round(tbtm*1000)} mm`],
+    ["基礎コン 幅×厚",`${num(baseW)} × ${num(baseT)} m`],
+  ];
+  const kpis=[{n:`${num(area,1)} <small>m²</small>`,l:"練積み面積"},{n:`${num(Vbase,1)} <small>m³</small>`,l:"基礎コン"},{n:`${num(Vgravel,1)} <small>m³</small>`,l:"裏込め砕石"},{n:`1:${slope}`,l:"法勾配"}];
+  return {isRC:false, shape:"block", methodName:"練積み（間知ブロック）",
+    geo:{slope,slant,tbtm,baseW,baseT}, Vc:Vbase,Fa:0,rebarKg:0,ratio:null,concQ,area,groups:[],items,days,dims,kpis,
+    basisHTML:`間知ブロックを勾配 1:${slope} で練積み。面積 ${num(area,1)} m²（法長 ${num(slant)}m×延長 ${num(L)}m）。材工単価は<b>間知ブロック＋胴込・裏込めコンクリート込</b>の想定です。宅地造成の練積み造は原則 高さ5m以下。勾配は土質・高さで決まります（本ツールは選択値）。`,
+    note:c=>`練積みは型枠・鉄筋なし・面積(㎡)ベースの積算。勾配・下端厚は宅造法の基準に沿って本設計で確定してください。`,
+    dimline:`練積み：勾配 1:${slope} ／ 法長 ${num(slant)}m ／ 面積 ${num(area,1)}㎡ ／ 下端厚 ${Math.round(tbtm*1000)}mm`};
 }
 function g(name,dia,pitch,n,len,w){ return {name,dia,pitch,n,len,kg:n*len*w}; }
 
@@ -385,86 +441,117 @@ function calcCP(Hg,L,Df){
 function render(){
   const c=calc();
   show("summary");
-  // KPI
+  set("sumTitle", `2. 概算サマリ（${c.methodName}）`);
+  set("kTotalL", `${c.methodName} 総額（税抜・諸経費込）`);
   set("kTotal", yen(c.total)+" <small>+税</small>");
   set("kUnit", yen(c.total/c.L)+" <small>/m</small>");
-  set("kRebar", num(c.rebarKg,0)+" <small>kg</small>");
-  set("kForm", num(c.Fa,1)+" <small>m²</small>");
-  set("kConc", num(c.concQ,1)+" <small>m³</small>");
-  set("kRatio", num(c.ratio,0)+" <small>kg/m³</small>");
+  document.getElementById("kpiRow").innerHTML=c.kpis.map(k=>`<div class="box"><div class="n">${k.n}</div><div class="l">${k.l}</div></div>`).join("");
+  const noteTxt = typeof c.note==="function" ? c.note(c) : c.note;
+  document.getElementById("methodNote").innerHTML = noteTxt ? `<div class="warnbox">⚠️ ${noteTxt}</div>` : "";
   document.getElementById("secfig").innerHTML=drawSection(c);
-  set("dimline",`断面：底版幅 B=${num(c.B)}m ／ 竪壁高 ${num(c.Hw)}m ／ 壁厚 ${Math.round(c.ttop*1000)}→${Math.round(c.t1*1000)}mm ／ 底版厚 ${Math.round(c.tb*1000)}mm`);
+  set("dimline", c.dimline);
 
   // CPミニ比較
-  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  const diff=c.cp.total-c.total, meWin=diff>=0;
   document.getElementById("cpMini").innerHTML=
-    `<div class="note" style="margin-top:12px">⚖️ <b>CP(プレキャストL型)なら ${yen(c.cp.total)}</b>／${c.cp.over?"※H2.5超は要特注・現場打ち推奨。":""}
-     現場打ちとの差 <b style="color:${rcWin?'var(--ok)':'var(--bad)'}">${rcWin?"現場打ちが":"CPが"} ${yen(Math.abs(diff))} 安い</b>。詳しくは「⚖️ CP比較」タブ。</div>`;
+    `<div class="note" style="margin-top:12px">⚖️ <b>CP(プレキャストL型)なら ${yen(c.cp.total)}</b>${c.cp.over?"／※H2.5超は要特注。":""}
+     ${c.methodName}との差 <b style="color:${meWin?'var(--ok)':'var(--bad)'}">${meWin?c.methodName+"が":"CPが"} ${yen(Math.abs(diff))} 安い</b>。詳しくは「⚖️ CP比較」タブ。</div>`;
 
-  // 顧客説明文
   set("custText", customerText(c), true);
-
   renderDetail(c);
   renderCP(c);
   renderPrice();
 }
 
-function drawSection(c){
-  // 断面図（正面から見た逆T/L型）: 高さ方向 = H, 横 = B
-  const W=340, Hpx=230, pad=42;
-  const sc=Math.min((W-2*pad)/c.B, (Hpx-2*pad)/c.H);
-  const bx=(W-c.B*sc)/2, by=Hpx-pad;                  // 底版左下基準
-  const X=x=>bx+x*sc, Y=y=>by-y*sc;                    // y:底版下端=0
-  // 頂点：底版(0..B, 0..tb)、竪壁は toe位置から t_top/t1 台形
-  const wl=c.toe, wr=c.toe+c.t1;                        // 壁 底部左右
-  const wtl=c.toe+(c.t1-c.ttop)/2, wtr=wtl+c.ttop;     // 壁 天端左右(中央寄せ)
-  const poly=[
-    [0,0],[c.B,0],[c.B,c.tb],[wr,c.tb],[wtr,c.H],[wtl,c.H],[wl,c.tb],[0,c.tb]
-  ].map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
-  // 地表・裏込め
-  const groundY=Y(c.tb+c.Hw*0 + c.Df); // 地上高の地面ライン: 天端-Hg = H-Hg = Df
-  const gy=Y(c.Df);
-  // 鉄筋（主筋ライン：背面縦・底版横）
-  const backX=X(wr)-2, mainBar=`<line x1="${backX}" y1="${Y(c.tb).toFixed(1)}" x2="${backX}" y2="${Y(c.H-0.05).toFixed(1)}" stroke="#c0392b" stroke-width="2"/>`;
-  const baseBarY=Y(c.tb-0.06);
-  const baseBar=`<line x1="${X(0.05).toFixed(1)}" y1="${baseBarY.toFixed(1)}" x2="${X(c.B-0.05).toFixed(1)}" y2="${baseBarY.toFixed(1)}" stroke="#c0392b" stroke-width="2"/>`;
-  return `<svg viewBox="0 0 ${W} ${Hpx}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
-    <rect x="0" y="0" width="${W}" height="${Hpx}" fill="#fbfcfe"/>
-    <line x1="${X(0)-14}" y1="${gy.toFixed(1)}" x2="${X(c.B)+14}" y2="${gy.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
-    <text x="${X(c.B)+16}" y="${(gy+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
+const SVGW=340, SVGH=230, SVGPAD=42;
+function svgFrame(inner){ return `<svg viewBox="0 0 ${SVGW} ${SVGH}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif"><rect x="0" y="0" width="${SVGW}" height="${SVGH}" fill="#fbfcfe"/>${inner}</svg>`; }
+function drawSection(c){ return c.shape==="rc"?drawRC(c):c.shape==="gravity"?drawGravity(c):drawBlock(c); }
+
+function drawRC(c){
+  const gg=c.geo, W=SVGW,Hpx=SVGH,pad=SVGPAD;
+  const sc=Math.min((W-2*pad)/gg.B,(Hpx-2*pad)/c.H);
+  const bx=(W-gg.B*sc)/2, by=Hpx-pad, X=x=>bx+x*sc, Y=y=>by-y*sc;
+  const wl=gg.toe, wr=gg.toe+gg.t1, wtl=gg.toe+(gg.t1-gg.ttop)/2, wtr=wtl+gg.ttop;
+  const poly=[[0,0],[gg.B,0],[gg.B,gg.tb],[wr,gg.tb],[wtr,c.H],[wtl,c.H],[wl,gg.tb],[0,gg.tb]]
+    .map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const gy=Y(c.Df), backX=X(wr)-2, baseBarY=Y(gg.tb-0.06);
+  return svgFrame(`
+    <line x1="${X(0)-14}" y1="${gy.toFixed(1)}" x2="${X(gg.B)+14}" y2="${gy.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text x="${X(gg.B)+16}" y="${(gy+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
     <polygon points="${poly}" fill="#dbe4ee" stroke="#1b3a5b" stroke-width="1.6"/>
-    ${mainBar}${baseBar}
+    <line x1="${backX}" y1="${Y(gg.tb).toFixed(1)}" x2="${backX}" y2="${Y(c.H-0.05).toFixed(1)}" stroke="#c0392b" stroke-width="2"/>
+    <line x1="${X(0.05).toFixed(1)}" y1="${baseBarY.toFixed(1)}" x2="${X(gg.B-0.05).toFixed(1)}" y2="${baseBarY.toFixed(1)}" stroke="#c0392b" stroke-width="2"/>
     <text x="${backX+4}" y="${Y(c.H-0.3).toFixed(1)}" font-size="9" fill="#c0392b">主筋 ${c.barStem.d}@${c.barStem.s}</text>
-    <text x="${X(c.B/2).toFixed(1)}" y="${(baseBarY+13).toFixed(1)}" font-size="9" fill="#c0392b" text-anchor="middle">底版筋 ${c.barBase.d}@${c.barBase.s}</text>
-    <line x1="${X(0).toFixed(1)}" y1="${(by+10).toFixed(1)}" x2="${X(c.B).toFixed(1)}" y2="${(by+10).toFixed(1)}" stroke="#334155" stroke-width="1"/>
-    <text x="${X(c.B/2).toFixed(1)}" y="${(by+22).toFixed(1)}" font-size="10" fill="#334155" text-anchor="middle">B=${num(c.B)}m</text>
-    <line x1="${(bx-12).toFixed(1)}" y1="${Y(0).toFixed(1)}" x2="${(bx-12).toFixed(1)}" y2="${Y(c.H).toFixed(1)}" stroke="#334155" stroke-width="1"/>
+    <text x="${X(gg.B/2).toFixed(1)}" y="${(baseBarY+13).toFixed(1)}" font-size="9" fill="#c0392b" text-anchor="middle">底版筋 ${c.barBase.d}@${c.barBase.s}</text>
+    <line x1="${X(0).toFixed(1)}" y1="${(by+10).toFixed(1)}" x2="${X(gg.B).toFixed(1)}" y2="${(by+10).toFixed(1)}" stroke="#334155"/>
+    <text x="${X(gg.B/2).toFixed(1)}" y="${(by+22).toFixed(1)}" font-size="10" fill="#334155" text-anchor="middle">B=${num(gg.B)}m</text>
+    <line x1="${(bx-12).toFixed(1)}" y1="${Y(0).toFixed(1)}" x2="${(bx-12).toFixed(1)}" y2="${Y(c.H).toFixed(1)}" stroke="#334155"/>
     <text x="${(bx-16).toFixed(1)}" y="${Y(c.H/2).toFixed(1)}" font-size="10" fill="#334155" text-anchor="end" transform="rotate(-90 ${(bx-16).toFixed(1)} ${Y(c.H/2).toFixed(1)})">全高 ${num(c.H)}m</text>
-    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">断面（${c.type==="invT"?"逆T型":"L型"}）</text>
-  </svg>`;
+    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">断面（${c.type==="invT"?"逆T型RC":"L型RC"}）</text>`);
+}
+
+function drawGravity(c){
+  const gg=c.geo, W=SVGW,Hpx=SVGH,pad=SVGPAD;
+  const sc=Math.min((W-2*pad)/gg.B,(Hpx-2*pad)/c.H);
+  const bx=(W-gg.B*sc)/2, by=Hpx-pad, X=x=>bx+x*sc, Y=y=>by-y*sc;
+  const poly=[[0,0],[0,c.H],[gg.btop,c.H],[gg.B,0]].map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const gy=Y(c.Df);
+  return svgFrame(`
+    <line x1="${X(0)-14}" y1="${gy.toFixed(1)}" x2="${X(gg.B)+14}" y2="${gy.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text x="${X(gg.B)+16}" y="${(gy+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
+    <polygon points="${poly}" fill="#dbe4ee" stroke="#1b3a5b" stroke-width="1.6"/>
+    <line x1="${X(0).toFixed(1)}" y1="${Y(c.H)-6}" x2="${X(gg.btop).toFixed(1)}" y2="${Y(c.H)-6}" stroke="#334155"/>
+    <text x="${X(gg.btop/2).toFixed(1)}" y="${(Y(c.H)-9).toFixed(1)}" font-size="9" fill="#334155" text-anchor="middle">天端 ${num(gg.btop)}m</text>
+    <line x1="${X(0).toFixed(1)}" y1="${(by+10).toFixed(1)}" x2="${X(gg.B).toFixed(1)}" y2="${(by+10).toFixed(1)}" stroke="#334155"/>
+    <text x="${X(gg.B/2).toFixed(1)}" y="${(by+22).toFixed(1)}" font-size="10" fill="#334155" text-anchor="middle">下端 B=${num(gg.B)}m</text>
+    <line x1="${(bx-12).toFixed(1)}" y1="${Y(0).toFixed(1)}" x2="${(bx-12).toFixed(1)}" y2="${Y(c.H).toFixed(1)}" stroke="#334155"/>
+    <text x="${(bx-16).toFixed(1)}" y="${Y(c.H/2).toFixed(1)}" font-size="10" fill="#334155" text-anchor="end" transform="rotate(-90 ${(bx-16).toFixed(1)} ${Y(c.H/2).toFixed(1)})">全高 ${num(c.H)}m</text>
+    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">断面（重力式・無筋）</text>`);
+}
+
+function drawBlock(c){
+  const gg=c.geo, W=SVGW,Hpx=SVGH,pad=44;
+  const off=gg.slope*(c.H-gg.baseT), topT=0.35, wallW=Math.max(gg.baseW, off+topT);
+  const sc=Math.min((W-2*pad)/wallW,(Hpx-2*pad)/c.H);
+  const bx=(W-wallW*sc)/2, by=Hpx-pad, X=x=>bx+x*sc, Y=y=>by-y*sc;
+  const base=[[0,0],[gg.baseW,0],[gg.baseW,gg.baseT],[0,gg.baseT]].map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const wall=[[0,gg.baseT],[gg.tbtm,gg.baseT],[off+topT,c.H],[off,c.H]].map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  let hatch="";
+  for(let i=1;i<=4;i++){ const y=gg.baseT+(c.H-gg.baseT)*i/5; const x1=off*(y-gg.baseT)/(c.H-gg.baseT);
+    hatch+=`<line x1="${X(x1).toFixed(1)}" y1="${Y(y).toFixed(1)}" x2="${X(x1+gg.tbtm*0.8).toFixed(1)}" y2="${Y(y).toFixed(1)}" stroke="#9db4cc" stroke-width="1"/>`; }
+  const gy=Y(c.Df);
+  return svgFrame(`
+    <line x1="${X(0)-14}" y1="${gy.toFixed(1)}" x2="${X(wallW)+8}" y2="${gy.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text x="${X(wallW)+10}" y="${(gy+4).toFixed(1)}" font-size="9" fill="#64748b">GL</text>
+    <polygon points="${base}" fill="#cfd8e3" stroke="#1b3a5b" stroke-width="1.4"/>
+    <polygon points="${wall}" fill="#dbe4ee" stroke="#1b3a5b" stroke-width="1.6"/>
+    ${hatch}
+    <text x="${X((off+gg.tbtm)/2).toFixed(1)}" y="${(Y(c.H/2)).toFixed(1)}" font-size="9" fill="#5b708a" text-anchor="middle" transform="rotate(-58 ${X((off+gg.tbtm)/2).toFixed(1)} ${(Y(c.H/2)).toFixed(1)})">間知ブロック</text>
+    <text x="${X(gg.baseW/2).toFixed(1)}" y="${(Y(0)+14).toFixed(1)}" font-size="9" fill="#334155" text-anchor="middle">基礎コン</text>
+    <line x1="${(bx-12).toFixed(1)}" y1="${Y(0).toFixed(1)}" x2="${(bx-12).toFixed(1)}" y2="${Y(c.H).toFixed(1)}" stroke="#334155"/>
+    <text x="${(bx-16).toFixed(1)}" y="${Y(c.H/2).toFixed(1)}" font-size="10" fill="#334155" text-anchor="end" transform="rotate(-90 ${(bx-16).toFixed(1)} ${Y(c.H/2).toFixed(1)})">全高 ${num(c.H)}m</text>
+    <text x="8" y="16" font-size="10" font-weight="700" fill="#1b3a5b">断面（練積み 1:${gg.slope}）</text>`);
 }
 
 function renderDetail(c){
-  // 断面寸法表
-  document.getElementById("dimTbl").innerHTML=`<tbody>
-    <tr><td>擁壁 全高 H（地上${num(c.Hg)}＋根入れ${num(c.Df)}）</td><td class="r">${num(c.H)} m</td></tr>
-    <tr><td>底版幅 B</td><td class="r">${num(c.B)} m</td></tr>
-    <tr><td>├ つま先長</td><td class="r">${num(c.toe)} m</td></tr>
-    <tr><td>└ かかと長</td><td class="r">${num(c.heel)} m</td></tr>
-    <tr><td>底版厚 tb</td><td class="r">${Math.round(c.tb*1000)} mm</td></tr>
-    <tr><td>竪壁高 Hw</td><td class="r">${num(c.Hw)} m</td></tr>
-    <tr><td>壁厚（天端→底部）</td><td class="r">${Math.round(c.ttop*1000)} → ${Math.round(c.t1*1000)} mm</td></tr>
-  </tbody>`;
-  // 配筋根拠
-  document.getElementById("rcBasis").innerHTML=
-    `土圧係数 Ka=${num(c.Ka,3)}（φ=${c.phi}°）。<br>
-     ・竪壁：曲げ M=${num(c.Mstem,1)} kN·m/m → 必要鉄筋量 As=${num(c.AsStem,0)} mm²/m → <b>${c.barStem.d}@${c.barStem.s}</b>（配置${num(c.barStem.prov,0)} mm²/m）<br>
-     ・底版：曲げ M=${num(c.Mbase,1)} kN·m/m → 必要As=${num(c.AsBase,0)} mm²/m → <b>${c.barBase.d}@${c.barBase.s}</b>（配置${num(c.barBase.prov,0)} mm²/m）`;
-  let rb=`<tbody><tr><th>部材</th><th class="c">径</th><th class="c">ピッチ</th><th class="r">本数</th><th class="r">単長m</th><th class="r">質量kg</th></tr>`;
-  c.groups.forEach(x=> rb+=`<tr><td>${x.name}</td><td class="c">${x.dia}</td><td class="c">${x.pitch}</td><td class="r">${x.n}</td><td class="r">${num(x.len)}</td><td class="r">${num(x.kg,0)}</td></tr>`);
-  rb+=`<tr class="sum"><td colspan="5">鉄筋 合計</td><td class="r">${num(c.rebarKg,0)} kg</td></tr></tbody>`;
-  document.getElementById("rebarTbl").innerHTML=rb;
-  document.getElementById("rebarNote").innerHTML=`鉄筋量 ${num(c.ratio,0)} kg/m³（一般的なRC擁壁は概ね 50〜130 kg/m³）。定着・重ね継手・フックを概算加算済み。${c.Hg>3?'<b style="color:#92400e">※高さ3m超は必ず構造計算で本設計を確定してください。</b>':''}`;
+  // 断面寸法表（型式共通）
+  document.getElementById("dimTbl").innerHTML="<tbody>"+
+    c.dims.map(d=>`<tr><td>${d[0]}</td><td class="r">${d[1]}</td></tr>`).join("")+"</tbody>";
+  // 根拠
+  document.getElementById("rcTitle").textContent = c.isRC ? "配筋の検討（見積根拠）" : "工法の考え方（見積根拠）";
+  document.getElementById("rcBasis").innerHTML = c.basisHTML;
+  if(c.isRC){
+    let rb=`<tbody><tr><th>部材</th><th class="c">径</th><th class="c">ピッチ</th><th class="r">本数</th><th class="r">単長m</th><th class="r">質量kg</th></tr>`;
+    c.groups.forEach(x=> rb+=`<tr><td>${x.name}</td><td class="c">${x.dia}</td><td class="c">${x.pitch}</td><td class="r">${x.n}</td><td class="r">${num(x.len)}</td><td class="r">${num(x.kg,0)}</td></tr>`);
+    rb+=`<tr class="sum"><td colspan="5">鉄筋 合計</td><td class="r">${num(c.rebarKg,0)} kg</td></tr></tbody>`;
+    document.getElementById("rebarTbl").innerHTML=rb;
+    document.getElementById("rebarNote").innerHTML=`鉄筋量 ${num(c.ratio,0)} kg/m³（一般的なRC擁壁は概ね 50〜130 kg/m³）。定着・重ね継手・フックを概算加算済み。${c.Hg>3?'<b style="color:#92400e">※高さ3m超は必ず構造計算で本設計を確定してください。</b>':''}`;
+  } else {
+    document.getElementById("rebarTbl").innerHTML="";
+    document.getElementById("rebarNote").innerHTML= c.shape==="gravity"
+      ? "重力式は無筋（用心鉄筋を除く）。滑動・転倒・支持力は自重で確認します。"
+      : "練積みは鉄筋・型枠なし。間知ブロック＋胴込・裏込めコンクリートで一体化します。";
+  }
 
   // 数量・金額
   let q=`<tbody><tr><th>区分</th><th>項目</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr>`;
@@ -473,24 +560,30 @@ function renderDetail(c){
     q+=`<tr><td></td><td>${it[1]}</td><td class="r">${it[2]}</td><td class="r">${yen(it[4])}</td><td class="r">${yen(it[3]*it[4])}</td></tr>`; });
   q+=`<tr class="sum"><td colspan="4">直接工事費</td><td class="r">${yen(c.direct)}</td></tr>`;
   q+=`<tr><td></td><td>諸経費</td><td class="r c" colspan="2">${P.overhead.v}%</td><td class="r">${yen(c.oh)}</td></tr>`;
-  q+=`<tr class="grand"><td colspan="4">合計（税抜）／ 工期目安 約${c.rcDays}日</td><td class="r">${yen(c.total)}</td></tr></tbody>`;
+  q+=`<tr class="grand"><td colspan="4">合計（税抜）／ 工期目安 約${c.days}日</td><td class="r">${yen(c.total)}</td></tr></tbody>`;
   document.getElementById("qtyTbl").innerHTML=q;
 }
+const METHOD_BULLETS={
+  rc:["自社の鉄筋・型枠で内製化","高さ・線形の自由度が高い","養生期間が必要","数量根拠が明確（本ツール）"],
+  gravity:["無筋でシンプル・型枠のみ","コンクリート量が多い","低い擁壁向き（〜2〜3m）","養生期間が必要"],
+  block:["間知ブロックで景観に馴染む","型枠・鉄筋が不要","勾配ぶんの用地が必要","5m以下・宅造基準に留意"],
+};
 
 function renderCP(c){
-  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  const diff=c.cp.total-c.total, meWin=diff>=0;
+  const bullets=(METHOD_BULLETS[c.shape]||[]).map(b=>`<li>${b}</li>`).join("");
   document.getElementById("cmpCols").innerHTML=`
-    <div class="col ${rcWin?'':'win'}">
-      <h4>CP（プレキャストL型）${rcWin?'':'<span class="tag ok">安い</span>'}</h4>
+    <div class="col ${meWin?'':'win'}">
+      <h4>CP（プレキャストL型）${meWin?'':'<span class="tag ok">安い</span>'}</h4>
       <div class="amt">${yen(c.cp.total)}</div>
       <div class="muted">工期 約${c.cp.cpDays}日</div>
       <ul><li>工期が短い・品質安定</li><li>製品費が高い／大型は割高</li><li>H2.5超は特注扱い</li><li>現場条件（搬入・クレーン）に左右</li></ul>
     </div>
-    <div class="col ${rcWin?'win':''}">
-      <h4>現場打ちRC（自社施工）${rcWin?'<span class="tag ok">安い</span>':''}</h4>
+    <div class="col ${meWin?'win':''}">
+      <h4>${c.methodName}${meWin?'<span class="tag ok">安い</span>':''}</h4>
       <div class="amt">${yen(c.total)}</div>
-      <div class="muted">工期 約${c.rcDays}日</div>
-      <ul><li>自社の鉄筋・型枠で内製化</li><li>高さ・線形の自由度が高い</li><li>養生期間が必要</li><li>数量根拠が明確（本ツール）</li></ul>
+      <div class="muted">工期 約${c.days}日</div>
+      <ul>${bullets}</ul>
     </div>`;
   let t=`<tbody><tr><th>項目</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr>`;
   c.cp.rows.forEach(r=> t+=`<tr><td>${r[0]}</td><td class="r">${r[1]}</td><td class="r">${yen(r[3])}</td><td class="r">${yen(r[2]*r[3])}</td></tr>`);
@@ -498,8 +591,8 @@ function renderCP(c){
   t+=`<tr><td>諸経費</td><td class="r c" colspan="2">${P.overhead.v}%</td><td class="r">${yen(c.cp.oh)}</td></tr>`;
   t+=`<tr class="grand"><td colspan="3">CP 合計（税抜）</td><td class="r">${yen(c.cp.total)}</td></tr></tbody>`;
   document.getElementById("cpTbl").innerHTML=t;
-  document.getElementById("cpAdvice").innerHTML= rcWin
-    ? `この高さ・延長では <b>現場打ちRCが ${yen(Math.abs(diff))} 有利</b>。自社の鉄筋・型枠工事で内製化するメリットが出ます。${c.cp.over?"CPは特注のため割高です。":""}`
+  document.getElementById("cpAdvice").innerHTML= meWin
+    ? `この高さ・延長では <b>${c.methodName}が ${yen(Math.abs(diff))} 有利</b>。自社施工で内製化するメリットが出ます。${c.cp.over?"CPは特注のため割高です。":""}`
     : `この条件では <b>CPが ${yen(Math.abs(diff))} 有利</b>。工期短縮も効くため、搬入・クレーンが確保できるならCPも検討価値あり。`;
 }
 
@@ -515,20 +608,23 @@ function renderPrice(){
 }
 
 function customerText(c){
-  const diff=c.cp.total-c.total, rcWin=diff>=0;
+  const diff=c.cp.total-c.total, meWin=diff>=0;
+  let qLines;
+  if(c.isRC) qLines=`・生コン：約 ${num(c.concQ,1)} m³\n・鉄筋 ：約 ${num(c.rebarKg,0)} kg（${c.barStem.d}@${c.barStem.s} 主筋ほか／${num(c.ratio,0)}kg/m³）\n・型枠 ：約 ${num(c.Fa,1)} m²`;
+  else if(c.shape==="gravity") qLines=`・生コン（無筋）：約 ${num(c.concQ,1)} m³\n・型枠 ：約 ${num(c.Fa,1)} m²`;
+  else qLines=`・練積み面積：約 ${num(c.area,1)} m²（勾配 1:${c.geo.slope}）\n・基礎コン：約 ${num(c.Vc,1)} m³\n・裏込め砕石ほか`;
+  const dimLine=c.dims.slice(1).map(d=>`${d[0].replace(/^[├└] /,'')} ${d[1]}`).join("・");
   return `【擁壁 概算のご説明】ハゼモト建設
-■ 条件：${c.type==="invT"?"逆T型":"L型"}RC擁壁 ／ 地上高 ${num(c.Hg)}m × 延長 ${num(c.L)}m
-■ 断面：底版幅 ${num(c.B)}m・壁厚 ${Math.round(c.ttop*1000)}→${Math.round(c.t1*1000)}mm・底版厚 ${Math.round(c.tb*1000)}mm（根入れ ${num(c.Df)}m）
+■ 工法：${c.methodName} ／ 地上高 ${num(c.Hg)}m × 延長 ${num(c.L)}m
+■ 断面：${dimLine}（根入れ ${num(c.Df)}m）
 
 ■ 見積の根拠（数量）
-・生コン：約 ${num(c.concQ,1)} m³
-・鉄筋 ：約 ${num(c.rebarKg,0)} kg（${c.barStem.d}@${c.barStem.s} 主筋ほか／${num(c.ratio,0)}kg/m³）
-・型枠 ：約 ${num(c.Fa,1)} m²
+${qLines}
 
 ■ 概算金額（税抜・諸経費込）
-・現場打ちRC（自社施工）：${yen(c.total)}  ＝ 約 ${yen(c.total/c.L)}/m
-・CP（プレキャストL型）  ：${yen(c.cp.total)}
-→ ${rcWin?`現場打ちが ${yen(Math.abs(diff))} お値打ちです。`:`CPが ${yen(Math.abs(diff))} お値打ちです。`}
+・${c.methodName}：${yen(c.total)}  ＝ 約 ${yen(c.total/c.L)}/m
+・CP（プレキャストL型）：${yen(c.cp.total)}
+→ ${meWin?`${c.methodName}が ${yen(Math.abs(diff))} お値打ちです。`:`CPが ${yen(Math.abs(diff))} お値打ちです。`}
 
 ※ 本書は現地概算です。地盤・境界・排水等により本設計（構造計算）で確定します。`;
 }
@@ -545,6 +641,11 @@ document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click",()=>{
 }));
 document.querySelectorAll("#typeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
   document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
+  const t=ch.dataset.k;
+  document.getElementById("slopeWrap").classList.toggle("hidden", !(t==="gravity"||t==="block"));
+}));
+document.querySelectorAll("#slopeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
+  document.querySelectorAll("#slopeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
 }));
 document.getElementById("run").addEventListener("click", render);
 document.getElementById("copyCust").addEventListener("click",()=>{
