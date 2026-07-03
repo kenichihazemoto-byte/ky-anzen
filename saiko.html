@@ -75,6 +75,7 @@
 </head>
 <body>
 <header><div class="wrap">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:5px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:600;opacity:.9;margin-bottom:6px">↩ 朝礼安全・KYツールへ戻る</a>
   <h1>☀️ 採光計算アシスタント</h1>
   <p>居室の採光計算（採光補正係数・有効採光面積・1/7判定）｜建築基準法 令19・20条準拠　— ハゼモト建設</p>
 </div></header>
@@ -158,7 +159,16 @@
   </div>
 
   <div class="toolbar" style="justify-content:flex-end">
+    <button class="btn ghost" id="btnShare">🔗 入力を共有リンクにコピー</button>
+    <button class="btn ghost" id="btnCsv">📊 Excel(CSV)で保存</button>
     <button class="btn ghost" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+  </div>
+  <div id="shareMsg" class="hint" style="text-align:right;margin-top:6px"></div>
+
+  <div class="card" style="border-color:#cfe3f7;background:#f5f9fe">
+    <h2 style="color:#1d4ed8"><span class="n" style="background:#2563eb">PDF</span>図面PDFから自動入力（Claude連携）</h2>
+    <p class="hint" style="margin-bottom:8px">図面（建具表・平面図・配置図・矩計図）の読み取りは、Claudeの <b>saikou-hantei</b> スキルが担当します。チャットにPDFを添付し「採光計算して」と伝えると、Claudeが各寸法を読み取り、<b>このツールに全値が入った状態の「共有リンク」</b>を発行します。そのリンクを開けば数値が自動で入り、あとは確認・微調整するだけです。</p>
+    <div class="note" style="margin-top:0">流れ：①チャットに図面PDFを添付 → ②「採光計算して」と依頼 → ③Claudeが読み取り→<b>この画面のプレフィルURL</b>を発行 → ④リンクを開くと自動入力 → ⑤画面で確認・修正 →「Excel(CSV)で保存」。<br>※図面の読み取り精度はAI補助のため、必ず数値と根拠（図面名・寸法）をご確認ください。</div>
   </div>
 
   <div class="note" style="margin-top:16px">
@@ -349,11 +359,98 @@ function renderRooms(rooms){
   });
 }
 
+/* ---------- 状態の直列化（共有リンク／プレフィル） ---------- */
+function serialize(){
+  const wins=[];
+  document.querySelectorAll("#wbody tr").forEach(tr=>{const g=s=>tr.querySelector(s);
+    wins.push({mark:g(".mark").value,room:g(".room").value,aw:g(".aw").value,L:g(".L").value,
+      D:g(".D").value,H:g(".H").value,road:g(".road").value==="1"?1:0,
+      sky:g(".sky").checked?1:0,eng:g(".eng").checked?1:0});});
+  const areas={};
+  Object.keys(roomAreas).forEach(k=>{if(roomAreas[k]!==""&&roomAreas[k]!=null)areas[k]=roomAreas[k];});
+  document.querySelectorAll("#rooms .area").forEach(inp=>{if(inp.value!=="")areas[inp.dataset.name]=inp.value;});
+  return {zone:$("zone").value,ratio:$("ratio").value,gutter:$("gutter").value,
+    wg:$("wg").value,f:$("f").value,r:$("r").value,nod:$("nokinode").value,wins,areas};
+}
+function applyState(s){
+  if(s.zone!=null)$("zone").value=s.zone;
+  if(s.ratio!=null)$("ratio").value=s.ratio;
+  if(s.gutter!=null)$("gutter").value=s.gutter;
+  if(s.wg!=null)$("wg").value=s.wg;
+  if(s.f!=null)$("f").value=s.f;
+  if(s.r!=null)$("r").value=s.r;
+  if(s.nod!=null)$("nokinode").value=s.nod;
+  if(s.areas)Object.assign(roomAreas,s.areas);
+  $("wbody").innerHTML="";rid=0;
+  const list=(s.wins&&s.wins.length)?s.wins:[{mark:"AW1"}];
+  list.forEach(w=>addRow(w));
+  updateZoneInfo();updateDelta();recalc();
+}
+function buildShareURL(){
+  return location.origin+location.pathname+"?d="+encodeURIComponent(JSON.stringify(serialize()));
+}
+function flash(t){const m=$("shareMsg");m.textContent=t;setTimeout(()=>{if(m.textContent===t)m.textContent="";},7000);}
+
+/* ---------- 計算結果の収集（CSV用） ---------- */
+function collect(){
+  const {delta,eave}=overhangEave(), rows=[];
+  document.querySelectorAll("#wbody tr").forEach(tr=>{const g=s=>tr.querySelector(s);
+    const aw=parseFloat(g(".aw").value)||0, Lin=g(".L").value, Din=g(".D").value;
+    let D; if(Din!=="")D=parseFloat(Din); else if(Lin!=="")D=(parseFloat(Lin)||0)-eave; else D=NaN;
+    const H=parseFloat(g(".H").value), road=g(".road").value==="1",
+      sky=g(".sky").checked, eng=g(".eng").checked, {c}=coefFor(D,H,road,sky,eng);
+    rows.push({mark:g(".mark").value,room:(g(".room").value||"（室名未入力）").trim(),
+      aw,L:Lin,D,H,road,sky,eng,c,eff:(isNaN(D)||H<=0)?NaN:aw*c});});
+  const ratio=parseFloat($("ratio").value), rooms={};
+  rows.forEach(r=>{if(!rooms[r.room])rooms[r.room]={eff:0,wins:0};rooms[r.room].eff+=(r.eff||0);rooms[r.room].wins++;});
+  Object.keys(rooms).forEach(n=>{const a=parseFloat(roomAreas[n])||0;
+    rooms[n].area=a;rooms[n].need=a*ratio;rooms[n].pass=a>0&&rooms[n].eff>=rooms[n].need;});
+  return {delta,eave,rows,rooms};
+}
+function downloadCSV(){
+  const z=currentZone(), {delta,eave,rows,rooms}=collect();
+  const q=v=>{v=(v==null?"":String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const line=arr=>arr.map(q).join(",");
+  const L=[];
+  L.push(line(["採光計算アシスタント 計算結果","","ハゼモト建設"]));
+  L.push("");
+  L.push(line(["用途地域",z[0]]));
+  L.push(line(["区分・式",z[4]+" ／ (D/H)×"+z[1]+"−"+z[2]+" ／ 緩和閾値 "+z[3]+"m"]));
+  L.push(line(["判定割合",$("ratio").selectedOptions[0].textContent]));
+  L.push(line(["軒とい",$("gutter").selectedOptions[0].textContent]));
+  L.push(line(["Δ(mm)",delta.toFixed(0),"外壁面〜軒樋外端(m)",eave.toFixed(3)]));
+  L.push("");
+  L.push(line(["記号","室名","窓面積Aw(m2)","離れL(m)","水平D(m)","垂直H(m)","面する対象","天窓","縁側","採光補正係数","有効採光面積(m2)"]));
+  rows.forEach(r=>L.push(line([r.mark,r.room,r.aw,r.L,isNaN(r.D)?"":r.D.toFixed(2),r.H||"",
+    r.road?"道路":"隣地",r.sky?"○":"",r.eng?"○":"",isNaN(r.c)?"":r.c.toFixed(2),isNaN(r.eff)?"":r.eff.toFixed(2)])));
+  L.push("");
+  L.push(line(["居室","窓数","有効採光面積合計(m2)","床面積(m2)","必要面積(m2)","判定","過不足(m2)"]));
+  Object.keys(rooms).forEach(n=>{const m=rooms[n];
+    L.push(line([n,m.wins,m.eff.toFixed(2),m.area?m.area.toFixed(2):"",m.area?m.need.toFixed(2):"",
+      m.area?(m.pass?"○ OK":"× NG"):"床面積未入力",m.area?(m.eff-m.need).toFixed(2):""]));});
+  const blob=new Blob(["﻿"+L.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="採光計算結果.csv";
+  document.body.appendChild(a);a.click();a.remove();
+  flash("✅ CSVを保存しました（Excelでそのまま開けます）");
+}
+
+/* ---------- ボタン ---------- */
+$("btnShare").addEventListener("click",async()=>{
+  const url=buildShareURL();
+  try{await navigator.clipboard.writeText(url);flash("✅ 共有リンクをコピーしました。このリンクを開くと今の入力が復元されます。");}
+  catch(e){window.prompt("以下のリンクをコピーしてください：",url);}
+});
+$("btnCsv").addEventListener("click",downloadCSV);
+
 /* ---------- 起動 ---------- */
-updateZoneInfo();
 $("gutter").value=0;$("wg").value=GUTTERS[0][1];
-updateDelta();
-addRow({mark:"AW1",room:"",aw:"",H:""});
+updateZoneInfo();
+(function init(){
+  const p=new URLSearchParams(location.search).get("d");
+  if(p){try{applyState(JSON.parse(decodeURIComponent(p)));flash("✅ 共有リンクの数値を読み込みました。内容をご確認ください。");return;}catch(e){console.warn("prefill error",e);}}
+  updateDelta();
+  addRow({mark:"AW1",room:"",aw:"",H:""});
+})();
 </script>
 </body>
 </html>

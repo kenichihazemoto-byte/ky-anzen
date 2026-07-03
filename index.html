@@ -52,6 +52,7 @@
   ruby{ruby-align:center}
   ruby rt{font-size:10px;color:#0369a1;font-weight:700;padding:0 2px}
   .tr{font-size:13px;color:#0369a1;font-weight:600;margin:2px 0 4px;line-height:1.5}
+  .emx{font-size:12px;color:#0369a1;line-height:1.45;margin:1px 0 7px}
   .btn{display:block;width:100%;border:none;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
   .btn-primary:active{transform:translateY(1px)}
@@ -107,7 +108,9 @@
     <div class="tab" data-tab="rec">記録</div>
     <div class="tab" data-tab="hiya">ヒヤリ</div>
     <div class="tab" data-tab="emg">緊急</div>
+    <div class="tab" data-tab="qual">資格</div>
   </div>
+  <a href="saiko.html" style="display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 12px;padding:9px 12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);border-radius:9px;color:#fff;text-decoration:none;font-size:13.5px;font-weight:700">☀️ 採光計算アシスタントを開く →</a>
 </header>
 
 <div class="wrap">
@@ -168,6 +171,7 @@
         <div id="healthbox" style="display:none"></div>
         <div id="hazards"></div>
         <div class="focus" id="focus"></div>
+        <div id="qualbox" style="display:none"></div>
         <div id="mannebox" style="display:none"></div>
         <div id="condbox" style="display:none"></div>
         <div id="hiyabox" style="display:none"></div>
@@ -270,20 +274,43 @@
       <button class="btn btn-primary" id="eSave" style="margin-top:12px">この内容を保存</button>
     </div>
     <div class="card">
-      <h2 style="font-size:15px;margin:0 0 8px;color:var(--navy)">📞 119番の伝え方</h2>
-      <div style="font-size:14px;line-height:1.9">
-        ①「救急です」<br>② 場所（住所・目印）<br>③ 何があったか（けが／熱中症／墜落／感電）<br>④ 人数・意識・呼吸の有無<br>⑤ 通報者の名前・携帯番号
+      <h2 style="font-size:15px;margin:0 0 8px;color:var(--navy)">📞 119番の伝え方 <span style="font-size:11px;color:#64748b">/ Gọi 119 / Telepon 119</span></h2>
+      <div style="font-size:14px;line-height:1.7">
+        <div>①「救急です」<div class="emx">🇻🇳 Gọi cấp cứu (nói "Kyuukyuu desu")　🇮🇩 Panggil ambulans (ucap "Kyuukyuu desu")</div></div>
+        <div>② 場所（住所・目印）<div class="emx">🇻🇳 Địa điểm (địa chỉ, mốc dễ nhận)　🇮🇩 Lokasi (alamat, patokan)</div></div>
+        <div>③ 何があったか（けが／熱中症／墜落／感電）<div class="emx">🇻🇳 Chuyện gì (bị thương/sốc nhiệt/ngã cao/điện giật)　🇮🇩 Apa yang terjadi (luka/sengatan panas/jatuh/tersengat)</div></div>
+        <div>④ 人数・意識・呼吸の有無<div class="emx">🇻🇳 Số người, ý thức, hô hấp　🇮🇩 Jumlah orang, kesadaran, pernapasan</div></div>
+        <div>⑤ 通報者の名前・携帯番号<div class="emx">🇻🇳 Tên và số điện thoại người gọi　🇮🇩 Nama & nomor HP pelapor</div></div>
       </div>
     </div>
     <div class="card">
       <h2 style="font-size:15px;margin:0 0 8px;color:var(--navy)">🆘 応急の初動</h2>
-      <div style="font-size:14px;line-height:1.9">
-        <b>🥵 熱中症</b>：日陰へ移す／衣服をゆるめ首・わき・足の付け根を冷やす／意識あれば水分・塩分。<b style="color:var(--r5)">意識がおかしい・水が飲めない→すぐ119</b><br>
-        <b>🩸 出血</b>：清潔な布で強く圧迫し、傷を心臓より高く<br>
-        <b>🦴 墜落・骨折</b>：むやみに動かさない／意識・呼吸を確認／119<br>
-        <b>⚡ 感電</b>：まず電源を切る（切れなければ触れない）／二次災害を防ぐ→119<br>
-        <b>❤️ 反応なし・呼吸なし</b>：大声で応援／119／AED（電源を入れ音声に従う）／胸骨圧迫
+      <div style="font-size:14px;line-height:1.6">
+        <div><b>🥵 熱中症</b>：日陰へ移す／衣服をゆるめ首・わき・足の付け根を冷やす／意識あれば水分・塩分。<b style="color:var(--r5)">意識がおかしい・水が飲めない→すぐ119</b>
+          <div class="emx">🇻🇳 Sốc nhiệt: đưa vào bóng râm; nới lỏng quần áo, làm mát cổ/nách/bẹn; nếu tỉnh cho uống nước+muối. Nếu lơ mơ/không uống được → gọi 119 ngay.</div>
+          <div class="emx">🇮🇩 Sengatan panas: pindah ke tempat teduh; longgarkan baju, dinginkan leher/ketiak/paha; jika sadar beri air+garam. Jika linglung/tak bisa minum → segera 119.</div></div>
+        <div><b>🩸 出血</b>：清潔な布で強く圧迫し、傷を心臓より高く
+          <div class="emx">🇻🇳 Chảy máu: ép mạnh bằng vải sạch, nâng vết thương cao hơn tim.</div>
+          <div class="emx">🇮🇩 Pendarahan: tekan kuat dengan kain bersih, angkat luka lebih tinggi dari jantung.</div></div>
+        <div><b>🦴 墜落・骨折</b>：むやみに動かさない／意識・呼吸を確認／119
+          <div class="emx">🇻🇳 Ngã/gãy xương: không di chuyển bừa bãi, kiểm tra ý thức và hô hấp, gọi 119.</div>
+          <div class="emx">🇮🇩 Jatuh/patah tulang: jangan pindahkan sembarangan, cek kesadaran & napas, 119.</div></div>
+        <div><b>⚡ 感電</b>：まず電源を切る（切れなければ触れない）／二次災害を防ぐ→119
+          <div class="emx">🇻🇳 Điện giật: tắt nguồn điện trước (nếu không tắt được thì không chạm), tránh tai nạn thứ cấp, 119.</div>
+          <div class="emx">🇮🇩 Tersengat listrik: matikan sumber listrik dulu (bila tak bisa, jangan sentuh), cegah kecelakaan susulan, 119.</div></div>
+        <div><b>❤️ 反応なし・呼吸なし</b>：大声で応援／119／AED（電源を入れ音声に従う）／胸骨圧迫
+          <div class="emx">🇻🇳 Bất tỉnh/không thở: gọi to tìm người, 119, dùng AED, ép tim.</div>
+          <div class="emx">🇮🇩 Tak sadar/tak bernapas: teriak minta bantuan, 119, pakai AED, kompresi dada.</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== 資格タブ ===== -->
+  <div id="tab-qual" class="hidden">
+    <div class="card">
+      <h2 style="font-size:16px;margin:0 0 6px;color:var(--navy)">🎫 作業者の資格</h2>
+      <div class="hint" style="margin:0 0 10px">保有資格をタップで選択（この端末に保存）。要資格作業で有資格者がいないとKYに警告が出ます。</div>
+      <div id="qualMatrix"></div>
     </div>
   </div>
 
@@ -481,11 +508,12 @@ document.querySelectorAll(".tab").forEach(t=>{
   t.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
     t.classList.add("on");
-    ["make","rec","hiya","emg"].forEach(id=>$("#tab-"+id).classList.add("hidden"));
+    ["make","rec","hiya","emg","qual"].forEach(id=>$("#tab-"+id).classList.add("hidden"));
     $("#tab-"+t.dataset.tab).classList.remove("hidden");
     if(t.dataset.tab==="rec") renderRecords();
     if(t.dataset.tab==="hiya") renderHiya();
     if(t.dataset.tab==="emg") renderEmg();
+    if(t.dataset.tab==="qual") renderQual();
     window.scrollTo({top:0});
   };
 });
@@ -1047,6 +1075,21 @@ $("#gen").onclick=()=>{
   const[fr]=rank(topFocus.pt);
   $("#focus").innerHTML=`★ 今日の最重点（リスク${fr}）：${ruby(topFocus.s)}<br>→ ${ruby(topFocus.m)}`;
 
+  // 資格の確認（要資格作業）
+  const rq=requiredQuals();
+  const qbx=$("#qualbox");
+  if(rq.length){
+    const qual=load2(LS_QUAL);
+    const rows=rq.map(q=>{
+      const holders=[...selWorker].filter(w=>(qual[w]||[]).includes(q));
+      return holders.length
+        ? `<div style="color:#166534">✅ ${q}：${holders.join("・")}</div>`
+        : `<div style="color:#b91c1c;font-weight:700">⚠ ${q}：有資格者を配置してください</div>`;
+    });
+    qbx.style.cssText="display:block;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin:0 0 14px";
+    qbx.innerHTML=`<div style="font-weight:800;color:#92400e;margin-bottom:4px">🎫 資格の確認（要資格作業）</div>`+rows.join("");
+  }else{ qbx.style.display="none"; }
+
   // 熱中症ボックス
   const feel=curTemp(), h=heatInfo(feel);
   const hb=$("#heatbox");
@@ -1286,6 +1329,40 @@ $("#eSave").onclick=()=>{
   $("#eSave").textContent="✓ 保存しました";
   setTimeout(()=>$("#eSave").textContent="この内容を保存",1500);
 };
+
+/* ===== 有資格者×KY連動 ===== */
+const LS_QUAL="ky_qual_v2";
+const QUALS=["玉掛け","ガス溶接・圧接","足場の組立て等","石綿","酸素欠乏","高所作業車","車両系建設機械","フルハーネス"];
+function renderQual(){
+  const data=load2(LS_QUAL); const el=$("#qualMatrix"); el.innerHTML="";
+  WORKERS.forEach(w=>{
+    const box=document.createElement("div"); box.style.cssText="border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px";
+    box.innerHTML=`<div style="font-weight:700;margin-bottom:4px">${w}</div>`;
+    const chips=document.createElement("div"); chips.className="chips";
+    QUALS.forEach(q=>{
+      const held=(load2(LS_QUAL)[w]||[]).includes(q);
+      const c=document.createElement("div"); c.className="chip"+(held?" on":""); c.textContent=q;
+      c.style.fontSize="12px"; c.style.padding="6px 10px";
+      c.onclick=()=>{ const d=load2(LS_QUAL); const arr=d[w]||[]; d[w]=arr.includes(q)?arr.filter(x=>x!==q):[...arr,q]; save(LS_QUAL,d); c.classList.toggle("on"); };
+      chips.appendChild(c);
+    });
+    box.appendChild(chips); el.appendChild(box);
+  });
+}
+function requiredQuals(){
+  const req=new Set();
+  if(sel.has("玉掛け・荷下ろし")) req.add("玉掛け");
+  if(sel.has("足場(組立・解体)")) req.add("足場の組立て等");
+  if(sel.has("石綿(含有・除去)")) req.add("石綿");
+  if(sel.has("酸欠・有害ガス作業")) req.add("酸素欠乏");
+  if(sel.has("火気(溶接・圧接・トーチ)")) req.add("ガス溶接・圧接");
+  if(selSub.has("鉄筋|ガス圧接")) req.add("ガス溶接・圧接");
+  if(selSub.has("解体|アスベスト・有害物")) req.add("石綿");
+  if(selSub.has("土工事・掘削|掘削(重機)")) req.add("車両系建設機械");
+  if(selHeight.has("高所作業車")) req.add("高所作業車");
+  if(selHeight.has("足場")||selHeight.has("屋根・端部2m↑")) req.add("フルハーネス");
+  return [...req];
+}
 </script>
 </body>
 </html>
