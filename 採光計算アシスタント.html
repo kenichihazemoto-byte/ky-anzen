@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>採光計算アシスタント｜ハゼモト建設</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#fff; --ink:#1f2937; --sub:#6b7280; --line:#e3e8ee;
+    --brand:#0f766e; --brand-d:#0b5b54; --accent:#2563eb;
+    --ok:#16a34a; --ok-bg:#e9f7ef; --ng:#dc2626; --ng-bg:#fdecec; --warn:#b45309; --warn-bg:#fef6e7;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.6;-webkit-text-size-adjust:100%}
+  header{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:18px 16px}
+  header .wrap{max-width:1000px;margin:0 auto}
+  header h1{margin:0;font-size:1.25rem;letter-spacing:.02em}
+  header p{margin:4px 0 0;font-size:.8rem;opacity:.9}
+  main{max-width:1000px;margin:0 auto;padding:16px 12px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 4px;font-size:1rem;color:var(--brand-d);display:flex;align-items:center;gap:8px}
+  .card h2 .n{background:var(--brand);color:#fff;width:22px;height:22px;border-radius:50%;
+              display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex:0 0 auto}
+  .hint{font-size:.78rem;color:var(--sub);margin:2px 0 14px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:640px){.grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:1fr 1fr 1fr}}
+  label{display:block;font-size:.82rem;font-weight:600;margin-bottom:4px}
+  label .u{font-weight:400;color:var(--sub);font-size:.75rem}
+  input,select{width:100%;padding:9px 10px;border:1px solid #cfd6de;border-radius:8px;font-size:.95rem;
+               background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,118,110,.15)}
+  input[readonly]{background:#f3f5f7;color:#374151;font-weight:600}
+  .derived{background:#f0f7f6;border:1px dashed #b7d8d4;border-radius:8px;padding:10px 12px;font-size:.85rem;margin-top:12px}
+  .derived b{color:var(--brand-d)}
+  .row-wg{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+  th{background:#f7f9fb;color:#374151;font-weight:600;position:sticky;top:0}
+  td input,td select{padding:6px 6px;font-size:.85rem;min-width:66px}
+  td .wname{min-width:96px}
+  td.calc{font-weight:700;background:#fbfdfd}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.78rem;font-weight:700}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.ng{background:var(--ng-bg);color:var(--ng)}
+  .pill.zero{background:#eef0f2;color:#6b7280}
+  button{cursor:pointer;font-family:inherit}
+  .btn{background:var(--brand);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:.9rem;font-weight:600}
+  .btn:hover{background:var(--brand-d)}
+  .btn.ghost{background:#fff;color:var(--brand-d);border:1px solid var(--brand)}
+  .btn.sm{padding:6px 12px;font-size:.82rem}
+  .btn.del{background:#fff;color:var(--ng);border:1px solid #f0c2c2;padding:5px 9px;font-size:.8rem}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .result{border-radius:12px;padding:18px;text-align:center;margin-bottom:10px}
+  .result.ok{background:var(--ok-bg);border:1.5px solid #b7e4c7}
+  .result.ng{background:var(--ng-bg);border:1.5px solid #f5c2c2}
+  .result .big{font-size:1.5rem;font-weight:800;margin:2px 0}
+  .result.ok .big{color:var(--ok)} .result.ng .big{color:var(--ng)}
+  .roomcard{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fcfdfe}
+  .roomcard h3{margin:0 0 8px;font-size:.95rem}
+  .roomgrid{display:grid;gap:10px}
+  @media(min-width:520px){.roomgrid{grid-template-columns:1fr 1fr 1fr}}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+  .kpi .l{font-size:.72rem;color:var(--sub)} .kpi .v{font-size:1rem;font-weight:700}
+  details{margin-top:8px;font-size:.82rem;color:var(--sub)}
+  details summary{cursor:pointer;color:var(--brand-d);font-weight:600}
+  .note{font-size:.75rem;color:var(--sub);background:#fbfbfc;border-left:3px solid #d7dce2;padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px}
+  .flag{font-size:.72rem;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:1px 6px;margin-left:6px}
+  footer{max-width:1000px;margin:0 auto;padding:0 12px 40px;font-size:.72rem;color:var(--sub)}
+  @media print{header{background:var(--brand-d)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar,.btn,.del{display:none!important}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>☀️ 採光計算アシスタント</h1>
+  <p>居室の採光計算（採光補正係数・有効採光面積・1/7判定）｜建築基準法 令19・20条準拠　— ハゼモト建設</p>
+</div></header>
+
+<main>
+  <!-- STEP 1 -->
+  <div class="card">
+    <h2><span class="n">1</span>用途地域と判定割合</h2>
+    <p class="hint">用途地域で採光補正係数の式が変わります（都市計画情報で要確認）。</p>
+    <div class="grid c2">
+      <div>
+        <label>用途地域</label>
+        <select id="zone"></select>
+      </div>
+      <div>
+        <label>判定割合（居室の種類）</label>
+        <select id="ratio">
+          <option value="0.142857">住宅の居室 1/7（原則）</option>
+          <option value="0.1">住宅の居室 1/10（照明設備設置・R5緩和）</option>
+          <option value="0.2">学校の教室等 1/5</option>
+        </select>
+      </div>
+    </div>
+    <div class="derived" id="zoneInfo"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <h2><span class="n">2</span>軒樋（のきどい）と水平距離の基準</h2>
+    <p class="hint">水平距離 D は<b>軒先ではなく軒樋外端</b>を基準に測ります。軒の出＋Δ を外壁面からの張り出しとして扱います。</p>
+    <div class="grid c2">
+      <div>
+        <label>軒とい種類 <span class="u">→ 前後幅 Wg 自動</span></label>
+        <select id="gutter"></select>
+      </div>
+      <div class="row-wg">
+        <div style="flex:1"><label>Wg 前後幅 <span class="u">mm</span></label><input id="wg" type="number" step="1"></div>
+      </div>
+      <div><label>f 受金具の前出 <span class="u">mm（標準10〜20）</span></label><input id="f" type="number" step="1" value="15"></div>
+      <div><label>r 軒先の鼻隠し出 <span class="u">mm（標準30〜60）</span></label><input id="r" type="number" step="1" value="45"></div>
+      <div><label>軒の出 <span class="u">外壁面〜軒先 mm</span></label><input id="nokinode" type="number" step="1" value="600"></div>
+    </div>
+    <div class="derived" id="deltaInfo"></div>
+    <div class="note">Δ = MAX( f + Wg − r , 0 )。外壁面〜軒樋外端 ＝ 軒の出 + Δ。各窓の水平距離 D ＝ 外壁面〜境界の離れ L −（軒の出＋Δ）。<br>軒の出が窓ごとに異なる場合は、窓表の D を直接入力して上書きできます。</div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card">
+    <h2><span class="n">3</span>窓ごとの入力</h2>
+    <p class="hint">建具表・平面図・配置図・矩計図から各値を入力。L を入れると D は自動計算（Dへ直接入力すると上書き）。天窓・縁側の補正にも対応。</p>
+    <div class="tablewrap">
+      <table id="wtable">
+        <thead>
+          <tr>
+            <th>記号</th><th>室名</th>
+            <th>窓面積 Aw<br><span style="font-weight:400">m²</span></th>
+            <th>離れ L<br><span style="font-weight:400">外壁〜境界 m</span></th>
+            <th>D<br><span style="font-weight:400">水平 m</span></th>
+            <th>H<br><span style="font-weight:400">垂直 m</span></th>
+            <th>面する<br>対象</th>
+            <th>天窓</th><th>縁側<br>≥90</th>
+            <th>採光補正<br>係数</th>
+            <th>有効採光<br>面積 m²</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="wbody"></tbody>
+      </table>
+    </div>
+    <div class="toolbar">
+      <button class="btn sm" id="addRow">＋ 窓を追加</button>
+      <button class="btn ghost sm" id="addSample">サンプル入力</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card">
+    <h2><span class="n">4</span>居室ごとの判定（有効採光面積 ≧ 床面積 × 割合）</h2>
+    <p class="hint">窓を「室名」で自動集計します。各居室の床面積を入力してください。</p>
+    <div id="rooms"><p class="hint" style="text-align:center;padding:12px 0">窓を入力すると居室ごとの判定がここに表示されます。</p></div>
+  </div>
+
+  <div class="toolbar" style="justify-content:flex-end">
+    <button class="btn ghost" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    ⚠️ 本ツールは<b>事前検討の補助</b>です。天窓×3・縁側(幅90cm以上)×0.7、道路面 or D≧閾値での1.0緩和、上限3.0を実装。最終判断は確認検査機関・審査基準によります。用途地域が不明な場合は都市計画情報をご確認ください。
+  </div>
+</main>
+
+<footer>
+  採光補正係数 =(D/H)×k1 − k2　｜　住居系 k1=6,k2=1.4,閾値7m／工業系 k1=8,k2=1,閾値5m／商業系・無指定 k1=10,k2=1,閾値4m。<br>
+  ハゼモト建設　採光計算アシスタント（saikou-hantei スキル準拠・ブラウザ単体版）
+</footer>
+
+<script>
+/* ---------- データ定義（saikou-hantei references/tables.md 準拠） ---------- */
+const ZONES = [
+  ["第一種低層住居専用地域",6,1.4,7,"住居系(一号)"],
+  ["第二種低層住居専用地域",6,1.4,7,"住居系(一号)"],
+  ["田園住居地域",6,1.4,7,"住居系(一号)"],
+  ["第一種中高層住居専用地域",6,1.4,7,"住居系(一号)"],
+  ["第二種中高層住居専用地域",6,1.4,7,"住居系(一号)"],
+  ["第一種住居地域",6,1.4,7,"住居系(一号)"],
+  ["第二種住居地域",6,1.4,7,"住居系(一号)"],
+  ["準住居地域",6,1.4,7,"住居系(一号)"],
+  ["準工業地域",8,1,5,"工業系(二号)"],
+  ["工業地域",8,1,5,"工業系(二号)"],
+  ["工業専用地域",8,1,5,"工業系(二号)"],
+  ["近隣商業地域",10,1,4,"商業系(三号)"],
+  ["商業地域",10,1,4,"商業系(三号)"],
+  ["用途地域の指定のない区域",10,1,4,"三号(無指定)"],
+];
+const GUTTERS = [
+  ["半丸105",114,false],["半丸120",127,false],
+  ["新・丸トップ RV105",110,true],["新・丸トップ RV120",125,true],
+  ["角とい105（アーバントップ等）",105,true],["角とい120",120,true],
+  ["アートフェイス（デザイン角）",110,true],
+  ["ファインスケアNF-Ⅰ(Panasonic)",130,true],
+  ["その他（手入力）",0,true],
+];
+
+/* ---------- 初期化 ---------- */
+const $ = id => document.getElementById(id);
+ZONES.forEach((z,i)=>{const o=document.createElement("option");o.value=i;o.textContent=z[0];$("zone").appendChild(o);});
+GUTTERS.forEach((g,i)=>{const o=document.createElement("option");o.value=i;o.textContent=g[0]+(g[1]?` (Wg=${g[1]}mm)`:"");$("gutter").appendChild(o);});
+
+function currentZone(){return ZONES[+$("zone").value];}
+function overhangEave(){ // 外壁面〜軒樋外端 (m)
+  const nod=parseFloat($("nokinode").value)||0;
+  const delta=Math.max((parseFloat($("f").value)||0)+(parseFloat($("wg").value)||0)-(parseFloat($("r").value)||0),0);
+  return {delta, eave:(nod+delta)/1000, nod};
+}
+
+function updateZoneInfo(){
+  const z=currentZone();
+  $("zoneInfo").innerHTML=`区分：<b>${z[4]}</b>　式：採光補正係数 =(D/H)×<b>${z[1]}</b> − <b>${z[2]}</b>　／　緩和閾値 D≧<b>${z[3]}m</b>（この距離以上 or 道路面なら1未満は1.0）`;
+}
+function updateDelta(){
+  const g=GUTTERS[+$("gutter").value];
+  if(!g[2]) $("wg").value=g[1]; // 確認済みは自動セット
+  const {delta,eave,nod}=overhangEave();
+  $("deltaInfo").innerHTML=`Δ ＝ MAX(${$("f").value||0} + ${$("wg").value||0} − ${$("r").value||0}, 0) ＝ <b>${delta.toFixed(0)}mm</b>　／　外壁面〜軒樋外端 ＝ 軒の出 ${nod}mm ＋ Δ ＝ <b>${eave.toFixed(3)}m</b>`;
+  recalc();
+}
+$("gutter").addEventListener("change",()=>{const g=GUTTERS[+$("gutter").value];$("wg").value=g[1]||"";updateDelta();});
+["zone","ratio"].forEach(id=>$(id).addEventListener("change",()=>{updateZoneInfo();recalc();}));
+["f","r","wg","nokinode"].forEach(id=>$(id).addEventListener("input",updateDelta));
+
+/* ---------- 採光補正係数の計算 ---------- */
+function coefFor(D,H,facesRoad,skylight,engawa){
+  const z=currentZone(), k1=z[1],k2=z[2],th=z[3];
+  if(H<=0||isNaN(D)||isNaN(H)) return {c:0,raw:NaN};
+  let raw=(D/H)*k1-k2;
+  let c=raw;
+  // 道路面 or D≧閾値 → 1未満は1.0
+  if(facesRoad || D>=th){ if(c<1) c=1.0; }
+  else { if(c<0) c=0; }
+  if(c<0) c=0;
+  // 天窓×3・縁側×0.7（最終上限3.0）
+  if(skylight) c*=3;
+  if(engawa) c*=0.7;
+  if(c>3) c=3;
+  return {c,raw};
+}
+
+/* ---------- 窓行 ---------- */
+let rid=0;
+function addRow(data={}){
+  const tr=document.createElement("tr");
+  tr.dataset.id=++rid;
+  tr.innerHTML=`
+    <td><input class="mark" style="min-width:56px" value="${data.mark||''}" placeholder="AW1"></td>
+    <td><input class="wname room" value="${data.room||''}" placeholder="洋室"></td>
+    <td><input class="aw" type="number" step="0.01" value="${data.aw??''}" placeholder="1.65"></td>
+    <td><input class="L" type="number" step="0.01" value="${data.L??''}" placeholder="3.0"></td>
+    <td><input class="D" type="number" step="0.01" value="${data.D??''}" placeholder="自動"></td>
+    <td><input class="H" type="number" step="0.01" value="${data.H??''}" placeholder="2.5"></td>
+    <td><select class="road"><option value="0">隣地</option><option value="1">道路</option></select></td>
+    <td><input class="sky" type="checkbox"></td>
+    <td><input class="eng" type="checkbox"></td>
+    <td class="calc coef">—</td>
+    <td class="calc eff">—</td>
+    <td><button class="del" title="削除">✕</button></td>`;
+  $("wbody").appendChild(tr);
+  if(data.road) tr.querySelector(".road").value="1";
+  if(data.sky) tr.querySelector(".sky").checked=true;
+  if(data.eng) tr.querySelector(".eng").checked=true;
+  tr.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",recalc));
+  tr.querySelector(".del").addEventListener("click",()=>{tr.remove();recalc();});
+  recalc();
+}
+$("addRow").addEventListener("click",()=>addRow());
+$("addSample").addEventListener("click",()=>{
+  $("wbody").innerHTML="";rid=0;
+  addRow({mark:"AW1",room:"洋室(1)",aw:1.65,L:3.0,H:2.5,road:0});
+  addRow({mark:"AW2",room:"洋室(1)",aw:0.90,L:3.0,H:2.5,road:0});
+  addRow({mark:"AW3",room:"LDK",aw:3.30,L:5.5,H:2.4,road:1});
+  // 床面積は集計描画後に流し込む
+  setTimeout(()=>{const inp=document.querySelector('[data-room="洋室(1)"] .area');if(inp){inp.value=8.28;}
+    const inp2=document.querySelector('[data-room="LDK"] .area');if(inp2){inp2.value=19.87;}recalc();},0);
+});
+
+/* ---------- 再計算 & 居室集計 ---------- */
+const roomAreas={}; // 室名→床面積 記憶
+function recalc(){
+  const {eave}=overhangEave();
+  const rooms={}; // name -> {eff, wins:[]}
+  document.querySelectorAll("#wbody tr").forEach(tr=>{
+    const aw=parseFloat(tr.querySelector(".aw").value)||0;
+    const Lin=tr.querySelector(".L").value;
+    const Din=tr.querySelector(".D").value;
+    let D;
+    if(Din!==""){D=parseFloat(Din);}
+    else if(Lin!==""){D=(parseFloat(Lin)||0)-eave; tr.querySelector(".D").placeholder=D.toFixed(2);}
+    else {D=NaN;}
+    const H=parseFloat(tr.querySelector(".H").value);
+    const road=tr.querySelector(".road").value==="1";
+    const sky=tr.querySelector(".sky").checked;
+    const eng=tr.querySelector(".eng").checked;
+    const {c,raw}=coefFor(D,H,road,sky,eng);
+    const eff=aw*c;
+    const coefCell=tr.querySelector(".coef");
+    if(isNaN(raw)||aw===0&&isNaN(D)){coefCell.textContent="—";tr.querySelector(".eff").textContent="—";}
+    else{
+      coefCell.textContent=c.toFixed(2);
+      coefCell.title=`算定値(D/H×k1−k2)=${isNaN(raw)?'—':raw.toFixed(2)}`;
+      tr.querySelector(".eff").textContent=eff.toFixed(2);
+    }
+    const name=(tr.querySelector(".room").value||"（室名未入力）").trim();
+    if(!rooms[name]) rooms[name]={eff:0,wins:0};
+    rooms[name].eff+=eff; rooms[name].wins++;
+  });
+  renderRooms(rooms);
+}
+
+function renderRooms(rooms){
+  const ratio=parseFloat($("ratio").value);
+  const ratioLbl=$("ratio").selectedOptions[0].textContent.match(/1\/\d+/)[0];
+  // 既存床面積値を退避
+  document.querySelectorAll("#rooms .area").forEach(inp=>{roomAreas[inp.dataset.name]=inp.value;});
+  const box=$("rooms");
+  const names=Object.keys(rooms);
+  if(names.length===0){box.innerHTML='<p class="hint" style="text-align:center;padding:12px 0">窓を入力すると居室ごとの判定がここに表示されます。</p>';return;}
+  box.innerHTML="";
+  names.forEach(name=>{
+    const eff=rooms[name].eff;
+    const savedArea=roomAreas[name]!==undefined?roomAreas[name]:"";
+    const area=parseFloat(savedArea)||0;
+    const need=area*ratio;
+    const pass=area>0 && eff>=need;
+    const card=document.createElement("div");
+    card.className="roomcard";card.dataset.room=name;
+    card.innerHTML=`
+      <h3>🏠 ${name} <span class="hint" style="font-weight:400">（窓 ${rooms[name].wins} 箇所）</span></h3>
+      <div class="roomgrid">
+        <div class="kpi"><div class="l">有効採光面積 合計</div><div class="v">${eff.toFixed(2)} m²</div></div>
+        <div class="kpi">
+          <div class="l">床面積 <span style="font-weight:400">m²</span></div>
+          <input class="area" data-name="${name}" type="number" step="0.01" value="${savedArea}" placeholder="床面積を入力"
+                 style="text-align:center;font-size:1rem;font-weight:700;margin-top:2px">
+        </div>
+        <div class="kpi"><div class="l">必要面積（×${ratioLbl}）</div><div class="v">${area>0?need.toFixed(2)+" m²":"—"}</div></div>
+      </div>
+      <div class="result ${pass?'ok':'ng'}" style="margin-top:10px;padding:12px">
+        <div class="big">${area===0?'床面積を入力してください':(pass?'○ 採光OK':'× 採光NG')}</div>
+        ${area>0?`<div style="font-size:.82rem">有効採光 ${eff.toFixed(2)} m² ${pass?'≧':'＜'} 必要 ${need.toFixed(2)} m²（不足/余剰 ${(eff-need>=0?'+':'')}${(eff-need).toFixed(2)} m²）</div>`:''}
+      </div>`;
+    box.appendChild(card);
+    card.querySelector(".area").addEventListener("input",e=>{roomAreas[name]=e.target.value;recalc();});
+  });
+}
+
+/* ---------- 起動 ---------- */
+updateZoneInfo();
+$("gutter").value=0;$("wg").value=GUTTERS[0][1];
+updateDelta();
+addRow({mark:"AW1",room:"",aw:"",H:""});
+</script>
+</body>
+</html>
