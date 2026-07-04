@@ -137,6 +137,10 @@
         <span class="chip" data-n="1.0">1割（1:1.0・緩）</span>
       </div>
     </div>
+    <label>仕上げ（RC擁壁）</label>
+    <div class="chips">
+      <span class="chip" id="decoChip">前面を化粧型枠にする（外構・見付側）</span>
+    </div>
     <details>
       <summary>土質・設計条件（ふつうはこのままでOK）</summary>
       <div class="row3" style="margin-top:8px">
@@ -242,8 +246,8 @@
 <!-- ============ タブ4：単価設定 ============ -->
 <div class="wrap hidden" id="tab-price">
   <div class="card">
-    <h2 class="sec">単価設定（九州シンセイ単価に差し替え）</h2>
-    <p class="muted">初期値は一般的な仮単価です。実単価を入れると全タブに即反映され、この端末に保存されます。</p>
+    <h2 class="sec">単価設定（自社・協力会社の実単価に差し替え）</h2>
+    <p class="muted">初期値はハゼモト実績（安部様邸擁壁）を基にした実勢単価です。案件に合わせて編集すると全タブに即反映され、この端末に保存されます。RECOM壁体は要見積の仮値です。</p>
     <table class="tbl" id="priceTbl"><tbody></tbody></table>
     <div class="row">
       <button class="btn btn-ghost" id="resetPrice">初期値に戻す</button>
@@ -257,18 +261,21 @@
 <script>
 /* ================= 単価（編集可・仮初期値） ================= */
 const DEFAULT_PRICES = {
-  concrete:   {label:"生コン（18-8-25 等）",       unit:"円/m³",  v:16000, grp:"躯体"},
-  pump:       {label:"ポンプ圧送",                  unit:"円/m³",  v:3500,  grp:"躯体"},
-  rebar:      {label:"鉄筋 材工（加工組立共）",      unit:"円/kg",  v:150,   grp:"躯体"},
-  form:       {label:"型枠 材工（打放し・両面）",    unit:"円/m²",  v:6000,  grp:"躯体"},
-  excav:      {label:"床掘・機械掘削",              unit:"円/m³",  v:1500,  grp:"付帯"},
+  concrete:   {label:"生コン",                      unit:"円/m³",  v:21250, grp:"躯体"},
+  pump:       {label:"生コン打設・圧送",            unit:"円/m³",  v:12000, grp:"躯体"},
+  rebar:      {label:"鉄筋 材工（材料＋加工組立）",  unit:"円/kg",  v:220,   grp:"躯体"},
+  form:       {label:"型枠 材工（普通・背面）",      unit:"円/m²",  v:8500,  grp:"躯体"},
+  form_deco:  {label:"化粧型枠（前面・見付）",       unit:"円/m²",  v:10000, grp:"躯体"},
+  base_form:  {label:"ベース型枠（延長 H150）",      unit:"円/m",   v:2000,  grp:"躯体"},
+  excav:      {label:"床掘・機械掘削",              unit:"円/m³",  v:4000,  grp:"付帯"},
   haul:       {label:"残土 積込・運搬処分",          unit:"円/m³",  v:4500,  grp:"付帯"},
-  backfill:   {label:"埋戻し・締固め",              unit:"円/m³",  v:1800,  grp:"付帯"},
+  backfill:   {label:"埋戻し・締固め",              unit:"円/m³",  v:3500,  grp:"付帯"},
   crushed:    {label:"基礎砕石 材工（RC-40 t=100）", unit:"円/m³",  v:6000,  grp:"付帯"},
   leveling:   {label:"均しコンクリート（t=50）",     unit:"円/m³",  v:18000, grp:"付帯"},
   backgravel: {label:"裏込め砕石（透水層）",         unit:"円/m³",  v:6000,  grp:"付帯"},
-  weep:       {label:"水抜きパイプ VP50",           unit:"円/本",  v:1500,  grp:"付帯"},
+  weep:       {label:"水抜きパイプ 75φ",            unit:"円/本",  v:2000,  grp:"付帯"},
   joint:      {label:"伸縮目地（1箇所あたり）",      unit:"円/箇所",v:6000,  grp:"付帯"},
+  equip:      {label:"重機回送・クレーン・共通仮設", unit:"円/式",  v:90000, grp:"付帯"},
   masonry:    {label:"練積み材工（間知ブロック・胴込/裏込コン込）",unit:"円/m²",v:38000,grp:"練積み"},
   masonry_base:{label:"練積み 基礎コンクリート（材工）",unit:"円/m³", v:22000, grp:"練積み"},
   recom_wall: {label:"RECOM壁体 材工（配筋・充填コン込／要見積）",unit:"円/m²",v:45000,grp:"RECOM"},
@@ -318,9 +325,10 @@ function calc(){
   const mu=+val("mu"), qa=+val("qa"), gc=+val("gc");
   const type=document.querySelector("#typeChips .chip.on").dataset.k;
   const slope=+(document.querySelector("#slopeChips .chip.on").dataset.n);
+  const deco=document.getElementById("decoChip").classList.contains("on");
   const H = Hg + Df;                       // 全高（底版下端〜天端）
   let c;
-  if(type==="invT"||type==="L") c=calcRC({Hg,L,Df,H,type,phi,gamma,q,fsa,cover});
+  if(type==="invT"||type==="L") c=calcRC({Hg,L,Df,H,type,phi,gamma,q,fsa,cover,deco});
   else if(type==="gravity")     c=calcGravity({Hg,L,Df,H,slope,phi,gamma,q,mu,qa,gc});
   else if(type==="block")       c=calcBlock({Hg,L,Df,H,slope});
   else                          c=calcRecom({Hg,L,Df,H,phi});
@@ -333,7 +341,7 @@ function calc(){
 
 /* ---- 逆T型/L型 RC擁壁 ---- */
 function calcRC(o){
-  const {Hg,L,Df,H,type,phi,gamma,q,fsa,cover}=o;
+  const {Hg,L,Df,H,type,phi,gamma,q,fsa,cover,deco}=o;
   const tb=Math.max(0.30,r05(0.12*H)), t1=Math.max(0.25,r05(0.11*H)), ttop=Math.min(0.30,Math.max(0.20,r05(0.07*H)));
   let B=Math.max(1.0,r05(0.60*H)); const Hw=H-tb;
   let toe=(type==="invT")?r05(B/3):0.10, heel=B-toe-t1;
@@ -342,7 +350,8 @@ function calcRC(o){
   const Mstem=Ka*gamma*Math.pow(Hw,3)/6 + Ka*q*Math.pow(Hw,2)/2;
   const dStem=Math.max(0.08,t1-cover-0.008), AsStem=Mstem*1e6/(fsa*0.875*dStem*1000), barStem=pickBar(AsStem);
   const Mbase=(gamma*Hw+q)*Math.pow(heel,2)/2, dBase=Math.max(0.08,tb-cover-0.008), AsBase=Mbase*1e6/(fsa*0.875*dBase*1000), barBase=pickBar(AsBase);
-  const Vc=(((ttop+t1)/2)*Hw+tb*B)*L, Fa=(2*Hw+2*tb)*L;
+  const Vc=(((ttop+t1)/2)*Hw+tb*B)*L;
+  const faFront=Hw*L, faBack=Hw*L, Fa=faFront+faBack, baseFormLen=Math.round(2*L*10)/10;
   const groups=[];
   {const s=barStem.s/1000,n=Math.round(L/s),len=Hw+tb+0.30,w=BAR[barStem.d].w; groups.push(g("竪壁 主筋（背面・縦）",barStem.d,`@${barStem.s}`,n,len,w));}
   {const sp=Math.min(0.30,2*barStem.s/1000),n=Math.round(L/sp),len=Hw+0.20; groups.push(g("竪壁 前面 縦筋","D13",`@${Math.round(sp*1000)}`,n,len,BAR.D13.w));}
@@ -355,18 +364,21 @@ function calcRC(o){
   const crushed=B*0.10*L, leveling=B*0.05*L, backgravel=0.30*Hw*L, weep=Math.max(1,Math.ceil(Hg*L/3)), joints=Math.max(1,Math.ceil(L/10));
   const concQ=Vc*1.03;
   const items=[
-    ["躯体","生コン",       `${num(concQ)} m³`, concQ, P.concrete.v],
-    ["躯体","ポンプ圧送",   `${num(concQ)} m³`, concQ, P.pump.v],
-    ["躯体","鉄筋 材工",    `${num(rebarKg,0)} kg`, rebarKg, P.rebar.v],
-    ["躯体","型枠 材工",    `${num(Fa)} m²`, Fa, P.form.v],
-    ["付帯","床掘・掘削",   `${num(excav)} m³`, excav, P.excav.v],
-    ["付帯","残土運搬処分", `${num(haul)} m³`, haul, P.haul.v],
-    ["付帯","埋戻し",       `${num(backfill)} m³`, backfill, P.backfill.v],
-    ["付帯","基礎砕石",     `${num(crushed)} m³`, crushed, P.crushed.v],
-    ["付帯","均しコン",     `${num(leveling)} m³`, leveling, P.leveling.v],
-    ["付帯","裏込め砕石",   `${num(backgravel)} m³`, backgravel, P.backgravel.v],
-    ["付帯","水抜きパイプ", `${weep} 本`, weep, P.weep.v],
-    ["付帯","伸縮目地",     `${joints} 箇所`, joints, P.joint.v],
+    ["躯体","生コン",           `${num(concQ)} m³`, concQ, P.concrete.v],
+    ["躯体","生コン打設・圧送", `${num(concQ)} m³`, concQ, P.pump.v],
+    ["躯体","鉄筋 材工",        `${num(rebarKg,0)} kg`, rebarKg, P.rebar.v],
+    deco
+      ? ["躯体","化粧型枠（前面）", `${num(faFront)} m²`, faFront, P.form_deco.v]
+      : ["躯体","型枠（前面）",     `${num(faFront)} m²`, faFront, P.form.v],
+    ["躯体","型枠（背面）",     `${num(faBack)} m²`, faBack, P.form.v],
+    ["躯体","ベース型枠",       `${num(baseFormLen)} m`, baseFormLen, P.base_form.v],
+    ["付帯","床掘・掘削",       `${num(excav)} m³`, excav, P.excav.v],
+    ["付帯","残土運搬処分",     `${num(haul)} m³`, haul, P.haul.v],
+    ["付帯","埋戻し",           `${num(backfill)} m³`, backfill, P.backfill.v],
+    ["付帯","裏込め砕石",       `${num(backgravel)} m³`, backgravel, P.backgravel.v],
+    ["付帯","水抜きパイプ",     `${weep} 本`, weep, P.weep.v],
+    ["付帯","伸縮目地",         `${joints} 箇所`, joints, P.joint.v],
+    ["付帯","重機回送・仮設",   `1 式`, 1, P.equip.v],
   ];
   const days=2+Math.ceil(rebarKg/500)+Math.ceil(Fa/16)+4+1;
   const dims=[
@@ -424,6 +436,7 @@ function calcGravity(o){
     ["付帯","裏込め砕石",`${num(backgravel)} m³`,backgravel,P.backgravel.v],
     ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
     ["付帯","伸縮目地",`${joints} 箇所`,joints,P.joint.v],
+    ["付帯","重機回送・仮設",`1 式`,1,P.equip.v],
   ];
   const days=2+Math.ceil(Fa/16)+Math.ceil(Vc/12)+3;
   const dims=[
@@ -458,6 +471,7 @@ function calcBlock(o){
     ["付帯","残土運搬処分",`${num(haul)} m³`,haul,P.haul.v],
     ["付帯","埋戻し",`${num(backfill)} m³`,backfill,P.backfill.v],
     ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
+    ["付帯","重機回送・仮設",`1 式`,1,P.equip.v],
   ];
   const days=1+Math.ceil(area/8)+1;
   const dims=[
@@ -496,6 +510,7 @@ function calcRecom(o){
     ["付帯","残土運搬処分",`${num(haul)} m³`,haul,P.haul.v],
     ["付帯","埋戻し",`${num(backfill)} m³`,backfill,P.backfill.v],
     ["付帯","水抜きパイプ",`${weep} 本`,weep,P.weep.v],
+    ["付帯","重機回送・仮設",`1 式`,1,P.equip.v],
   ];
   const days=2+Math.ceil(area/10)+2;
   const dims=[
@@ -812,6 +827,7 @@ document.querySelectorAll("#typeChips .chip").forEach(ch=> ch.addEventListener("
 document.querySelectorAll("#slopeChips .chip").forEach(ch=> ch.addEventListener("click",()=>{
   document.querySelectorAll("#slopeChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
 }));
+document.getElementById("decoChip").addEventListener("click",e=> e.currentTarget.classList.toggle("on"));
 function openSheetPrint(){ if(!CUR){render();} document.querySelector('.tab[data-tab="zumen"]').click(); setTimeout(()=>window.print(),60); }
 document.getElementById("run").addEventListener("click", render);
 document.getElementById("printSheet").addEventListener("click", openSheetPrint);
