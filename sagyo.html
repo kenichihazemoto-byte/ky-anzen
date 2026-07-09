@@ -196,6 +196,18 @@
 
 <!-- ========== 標準仕様マスタ ========== -->
 <div class="wrap hidden" id="tab-spec">
+  <div class="card" style="border-color:#c7d7ea">
+    <h2 class="sec">🏢 会社標準（本社が一括管理）</h2>
+    <p class="muted">本社が「会社標準」を1回更新すると、各端末は<b>次に開いたとき自動で最新に合わせ</b>ます。個別に調整したい端末は自動反映をOFFにできます。</p>
+    <div id="companyStatus" style="background:#f1f5f9;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px">会社標準：確認中…</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);font-weight:700;margin:6px 0"><input type="checkbox" id="autoSyncChk" checked style="width:18px;height:18px"> 会社標準に自動で合わせる（推奨）</label>
+    <div class="row">
+      <button class="btn btn-sub" id="companyFetch">🔄 今すぐ会社標準を取得</button>
+      <button class="btn btn-sub" id="companyExport" style="background:#eef7ee;border-color:#bbe9c9;color:#166534">📤 本社用：会社標準JSONを書き出す</button>
+    </div>
+    <div class="note">🏢 <b>本社担当のみ</b>：下で値を編集 →「会社標準JSONを書き出す」→ できた <b>daiku_spec.json</b> を GitHub の ky-anzen リポジトリに上書きアップロード。版番号は自動で+1され、全端末が次回起動で自動反映します。</div>
+  </div>
+
   <div class="card">
     <h2 class="sec">🏠 ハゼモト標準仕様マスタ</h2>
     <p class="muted">ここに入れた値が指示書の材料・仕様・ビスピッチに<b>自動で反映</b>されます。この端末に保存されます（現場ごとに変わりません）。<br><span style="color:var(--bad);font-weight:700">初期値は一般的な代表値の「仮」です。</span>ハゼモトの実際の品番・金物・ピッチに書き換えてください。</p>
@@ -233,7 +245,7 @@ $$('.tab').forEach(t=>t.onclick=()=>{
   $$('.tab').forEach(x=>x.classList.toggle('on',x===t));
   ['gen','map','conv','spec'].forEach(k=>$('#tab-'+k).classList.toggle('hidden',k!==t.dataset.tab));
   if(t.dataset.tab==='map') renderMap();
-  if(t.dataset.tab==='spec') renderSpecForm();
+  if(t.dataset.tab==='spec'){ renderSpecForm(); if(typeof renderCompanyStatus==='function') renderCompanyStatus(); }
 });
 (function(){const d=new Date();$('#day').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
 
@@ -478,7 +490,52 @@ $('#specShareCopy').onclick=()=>{const t=$('#specShareUrl');t.select();try{docum
 $('#specDownload').onclick=()=>{const blob=new Blob([JSON.stringify(SPEC,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='大工標準仕様.json';a.click();toast('設定ファイルを保存しました');};
 $('#specFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const o=JSON.parse(rd.result);const map={};Object.keys(o).forEach(k=>{map[k]=(o[k]&&typeof o[k]==='object'&&'val'in o[k])?o[k].val:o[k];});applySpecImport(map);toast('設定を読み込みました');}catch(err){toast('読み込めませんでした');}};rd.readAsText(f);e.target.value='';};
 /* 起動時：?spec= があれば取り込み → URLから除去（二重適用防止） */
-(function(){try{const p=new URLSearchParams(location.search).get('spec');if(!p)return;applySpecImport(decSpec(p));history.replaceState(null,'',location.pathname);toast('配布された標準仕様を取り込みました');}catch(e){}})();
+(function(){try{const p=new URLSearchParams(location.search).get('spec');if(!p)return;window.__linkImported=true;applySpecImport(decSpec(p));history.replaceState(null,'',location.pathname);toast('配布された標準仕様を取り込みました');}catch(e){}})();
+
+/* ---- 会社標準（本社管理のdaiku_spec.jsonを起動時に取得して自動反映）---- */
+const CO_AUTO='daiku_spec_auto', CO_VER='daiku_spec_ver', CO_META='daiku_spec_company';
+function companyMeta(){try{return JSON.parse(localStorage.getItem(CO_META)||'null');}catch(e){return null;}}
+function renderCompanyStatus(){
+  const el=$('#companyStatus'); if(!el) return;
+  const m=companyMeta(); const auto=localStorage.getItem(CO_AUTO)!=='0';
+  const chk=$('#autoSyncChk'); if(chk) chk.checked=auto;
+  el.textContent = (m&&m.version)
+    ? `会社標準：v${m.version}（${m.updatedAt||'—'}）適用済み`
+    : '会社標準：未設定（本社が daiku_spec.json を公開すると自動で入ります）';
+}
+async function syncCompanySpec(manual){
+  if(!manual){
+    if(localStorage.getItem(CO_AUTO)==='0') return;   // この端末は自動反映OFF
+    if(window.__linkImported) return;                  // 配布リンクで開いた回は会社側を優先しない
+  }
+  try{
+    const res=await fetch('daiku_spec.json?ver='+Date.now(),{cache:'no-store'});
+    if(!res.ok){ if(manual) toast('会社標準が見つかりません（未公開）'); return; }
+    const data=await res.json();
+    if(!data||!data.spec){ if(manual) toast('会社標準の形式が不正です'); return; }
+    const lastVer=parseInt(localStorage.getItem(CO_VER)||'0',10);
+    if(!manual && data.version && data.version<=lastVer){ return; } // 既に最新
+    applySpecImport(data.spec);
+    if(data.version) localStorage.setItem(CO_VER,String(data.version));
+    localStorage.setItem(CO_META,JSON.stringify({version:data.version,updatedAt:data.updatedAt,note:data.note}));
+    renderCompanyStatus();
+    if(!$('#tab-spec').classList.contains('hidden')) renderSpecForm();
+    toast(manual?`会社標準 v${data.version||'?'} を取得しました`:`会社標準 v${data.version||'?'} に更新しました`);
+  }catch(e){ if(manual) toast('取得できませんでした（通信環境を確認）'); }
+}
+$('#autoSyncChk').onchange=function(){localStorage.setItem(CO_AUTO,this.checked?'1':'0');toast(this.checked?'自動反映：ON':'自動反映：OFF');};
+$('#companyFetch').onclick=()=>syncCompanySpec(true);
+$('#companyExport').onclick=()=>{
+  const cur=companyMeta(); const nextVer=((cur&&cur.version)?cur.version:0)+1;
+  const spec={}; Object.keys(SPEC).forEach(k=>spec[k]=SPEC[k].val);
+  const d=new Date(); const ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const data={version:nextVer,updatedAt:ymd,note:'ハゼモト標準仕様（本社管理）',spec};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='daiku_spec.json';a.click();
+  toast(`会社標準JSON v${nextVer} を書き出しました → GitHubに上書きアップロード`);
+};
+renderCompanyStatus();
+syncCompanySpec(false);
 
 /* ===== 条件・工程選択 ===== */
 const conds={fireproof:true,enen:true,jio:true};
