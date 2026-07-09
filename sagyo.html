@@ -86,6 +86,9 @@
   .rework .f{color:var(--bad);font-weight:700}
   .rework .p{color:#166534}
   .kybox{background:#eff6ff;border:1.5px solid #cfe0f5;border-radius:10px;padding:10px 12px;font-size:13.5px;color:#1e3a8a}
+  .hzspec{background:#f0fdf4;border:1.5px solid #bbe9c9;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+  .hzspec .t{color:#166534;font-weight:800;font-size:12.5px;margin-bottom:6px}
+  .hzspec .mat-tbl td{border-color:#cdeed7}
   .calc{background:#f0fdfa;border:1px solid #bfe6df;border-radius:10px;padding:10px 12px;margin-top:6px}
   .calc .cin{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
   .calc .cin>div{flex:1;min-width:100px}
@@ -114,6 +117,7 @@
     <div class="tab on" data-tab="gen">📋 指示書を作る</div>
     <div class="tab" data-tab="map">🔎 検査工程マップ</div>
     <div class="tab" data-tab="conv">🤖 仕様書→指示書変換</div>
+    <div class="tab" data-tab="spec">🏠 標準仕様</div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 10px">
     <a href="index.html" style="padding:6px 10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:#fff;text-decoration:none;font-size:12px;font-weight:700">🦺 安全KY</a>
@@ -190,6 +194,17 @@
   </div>
 </div>
 
+<!-- ========== 標準仕様マスタ ========== -->
+<div class="wrap hidden" id="tab-spec">
+  <div class="card">
+    <h2 class="sec">🏠 ハゼモト標準仕様マスタ</h2>
+    <p class="muted">ここに入れた値が指示書の材料・仕様・ビスピッチに<b>自動で反映</b>されます。この端末に保存されます（現場ごとに変わりません）。<br><span style="color:var(--bad);font-weight:700">初期値は一般的な代表値の「仮」です。</span>ハゼモトの実際の品番・金物・ピッチに書き換えてください。</p>
+    <div id="specForm"></div>
+    <button class="btn btn-sub" id="specReset" style="margin-top:8px">↩ 初期値（仮）に戻す</button>
+    <div class="note">品番・数値の最終確定は設計図書・協力業者の金物表・メーカー仕様書と照合すること。</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -197,8 +212,9 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
 $$('.tab').forEach(t=>t.onclick=()=>{
   $$('.tab').forEach(x=>x.classList.toggle('on',x===t));
-  ['gen','map','conv'].forEach(k=>$('#tab-'+k).classList.toggle('hidden',k!==t.dataset.tab));
+  ['gen','map','conv','spec'].forEach(k=>$('#tab-'+k).classList.toggle('hidden',k!==t.dataset.tab));
   if(t.dataset.tab==='map') renderMap();
+  if(t.dataset.tab==='spec') renderSpecForm();
 });
 (function(){const d=new Date();$('#day').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
 
@@ -219,13 +235,13 @@ const PROCESS=[
   ky:'掘方・型枠内は転落注意。打設ポンプ圧送のホースふれ、生コンのアルカリ（皮膚・目）に注意。',
   rework:[{f:'アンカーが柱・土台継手からずれ、土台に穴が開けられない／耐力が出ない',p:'打設前に土台伏せ図でアンカー1本ずつ芯出し確認。ずれは打設前に是正。'}]
 },
-{ id:'dodai', name:'土台敷き（土台伏せ）', order:2,
+{ id:'dodai', name:'土台敷き（土台伏せ）', order:2, specRefs:['dim_dodai'],
   steps:[
     '基礎天端の<b>レベル・墨</b>を確認。基礎パッキン（換気/気密）を通り芯に沿って敷く。',
     '土台の<b>継手・仕口を土台伏せ図どおり</b>に配置。アンカーボルトの位置に土台の穴あけ、座金・ナットで緊結。',
     '<b>防蟻・防腐処理</b>（1mまで/指定範囲）。切断・穴あけ部は<b>現場塗布で再処理</b>。',
     '通り・矩（かね）・対角を実測し<b>±規定内</b>に。大引・鋼製束のレベル調整。'],
-  mats:[{n:'土台',spec:'桧/米ヒバ 105/120角 防腐防蟻',unit:'m',pick:'外周＋間仕切り土台の総長'},
+  mats:[{n:'土台',spec:'桧/米ヒバ 105/120角 防腐防蟻',sref:'dim_dodai',unit:'m',pick:'外周＋間仕切り土台の総長'},
         {n:'基礎パッキン',spec:'換気/気密 型式指定',unit:'枚',pick:'アンカー間・継手部に配置'},
         {n:'座金付ナット',spec:'アンカーM12用',unit:'組',pick:'アンカー本数と同数'},
         {n:'防蟻剤',spec:'現場処理用',unit:'L',pick:'切断・穴あけ部の再塗布分'}],
@@ -234,13 +250,13 @@ const PROCESS=[
   ky:'土台・大引は重量物。腰・指の挟まれ。基礎上の歩行で墜落・つまずき。防蟻剤の換気・保護具。',
   rework:[{f:'防蟻の現場再処理忘れ→瑕疵保険・JIOで指摘、床下再施工',p:'切断/穴あけしたら即その場で塗布。処理箇所を写真に残す。'}]
 },
-{ id:'tateka', name:'建方・上棟（軸組・耐震金物）', order:3,
+{ id:'tateka', name:'建方・上棟（軸組・耐震金物）', order:3, specRefs:['km_chutou','km_hd','km_suji','km_hakoita','km_nail','dim_hashira'],
   steps:[
     '<b>建入れ直し</b>（下げ振り/レーザーで垂直）→仮筋交いで固定してから金物本締め。',
     '<b>柱頭柱脚金物・ホールダウン・筋交いプレート・羽子板・火打</b>を金物リストどおりに。<b>N/CN釘は所定本数・全数打ち</b>（片持ち・打ち忘れ厳禁）。',
     '通し柱・管柱、梁の<b>継手方向・上下</b>を伏図で確認。プレカット番付どおりに組む。',
     '筋交いは<b>欠き込み減寸法に注意</b>、端部は指定金物で緊結。'],
-  mats:[{n:'構造金物一式',spec:'柱頭柱脚/HD/羽子板/筋交金物',unit:'式',pick:'金物リスト（N値計算）で拾う'},
+  mats:[{n:'構造金物一式',spec:'柱頭柱脚/HD/羽子板/筋交金物',sref:'km_chutou',unit:'式',pick:'金物リスト（N値計算）で拾う'},
         {n:'ビス・釘',spec:'ZN/CN 指定',unit:'箱',pick:'金物1個あたり所定本数×個数'},
         {n:'仮筋交い材',spec:'貫/垂木',unit:'本',pick:'建入れ用'}],
   insp:[{by:'jio',if:'jio',when:'金物・耐力壁を隠す前（金物検査）',check:'JIO躯体（構造）検査：柱頭柱脚金物・HD・筋交金物・耐力壁・釘の種類/本数/ピッチ',photo:true,hide:'ボード・断熱で塞ぐと金物が見えなくなる'},
@@ -250,38 +266,38 @@ const PROCESS=[
   rework:[{f:'金物の釘が本数不足・違う釘→JIO/検査で是正指示、内装後だと壁を壊す',p:'「1金物ずつ指差し・全数写真」。専用釘以外を使わない。検査前に自主チェック表で潰す。'},
           {f:'建入れ直し不足で通りが狂い、床・建具でしわ寄せ',p:'金物本締め前に対角・垂直を実測。仮筋交いで固めてから締める。'}]
 },
-{ id:'yane', name:'屋根下地・ルーフィング', order:4,
+{ id:'yane', name:'屋根下地・ルーフィング', order:4, specRefs:['wp_roof'],
   steps:[
     '<b>野地板</b>を千鳥で釘打ち（受け材位置・ピッチ厳守）。軒の出・けらばを図面寸法に。',
     '<b>ルーフィング</b>は軒先→棟へ、<b>上下100mm・左右200mm重ね</b>。谷・棟・壁際は増し張り。',
     '貫通部（換気/煙突）は<b>雨仕舞い先行</b>。タッカーは要所、めくれ防止。'],
   mats:[{n:'野地板',spec:'構造用合板12mm等',unit:'枚',pick:'屋根面積÷1枚×1.1'},
-        {n:'アスファルトルーフィング',spec:'940以上',unit:'巻',pick:'屋根面積÷有効面積×1.15'},
+        {n:'アスファルトルーフィング',spec:'940以上',sref:'wp_roof',unit:'巻',pick:'屋根面積÷有効面積×1.15'},
         {n:'屋根釘/ステープル',spec:'指定',unit:'箱',pick:'-'}],
   insp:[{by:'shanai',when:'屋根材施工前',check:'ルーフィング重ね代・貫通部雨仕舞い（社内）',photo:true,hide:'屋根材を葺くと下葺きは見えない'}],
   ky:'屋根端部2m以上＝墜落最重点。フルハーネス・先行手すり/親綱。勾配での滑落、材のずり落ち。',
   rework:[{f:'ルーフィング重ね不足・逆張りで雨漏り→天井・断熱まで被害',p:'軒先から上へ、重ね寸法を実測。貫通部は先に処理。'}]
 },
-{ id:'menzai', name:'外周 構造用面材・耐力壁', order:5,
+{ id:'menzai', name:'外周 構造用面材・耐力壁', order:5, specRefs:['menzai','menzai_nail','menzai_pitch'],
   steps:[
     '構造用面材（合板/ダイライト等）を<b>指定の釘・ピッチ（外周100・中通り200 等）</b>で全数打ち。',
     '<b>釘のめり込みは板厚の限度内</b>（打ち込み過ぎ=耐力低下）。継目は<b>受け材（間柱/胴差）上</b>で。',
     '開口部周りの面材の切欠き・補強を図面どおりに。'],
-  mats:[{n:'構造用面材',spec:'合板9mm/ダイライト等',unit:'枚',pick:'外壁面積÷2.48×1.1'},
-        {n:'専用釘',spec:'N50/GNF40等 指定',unit:'箱',pick:'面材1枚あたり約45本'}],
+  mats:[{n:'構造用面材',spec:'合板9mm/ダイライト等',sref:'menzai',unit:'枚',pick:'外壁面積÷2.48×1.1'},
+        {n:'専用釘',spec:'N50/GNF40等 指定',sref:'menzai_nail',unit:'箱',pick:'面材1枚あたり約45本'}],
   insp:[{by:'jio',if:'jio',when:'透湿防水シート・断熱で隠す前',check:'JIO躯体検査：耐力壁の面材・釘種類・ピッチ・めり込み',photo:true,hide:'シート/胴縁/外装で完全に隠れる'},
         {by:'shanai',when:'シート張り前',check:'釘ピッチ・めり込み・継目位置（社内）',photo:true,hide:''}],
   ky:'足場上作業。墜落・工具落下。釘打機の暴発（手元確認）。',
   rework:[{f:'釘ピッチ違い・めり込み過大で耐力不足→外装後に是正=足場・外装やり直し',p:'1面張り終えるごとにピッチと沈み確認。検査前に釘頭を目視全数。'}]
 },
-{ id:'bousui', name:'透湿防水シート・サッシ防水（外装下地）', order:6,
+{ id:'bousui', name:'透湿防水シート・サッシ防水（外装下地）', order:6, specRefs:['wp_sheet','wp_tape'],
   steps:[
     '透湿防水シートは<b>下から上へ、上下90mm・左右150mm以上重ね</b>。',
     'サッシは<b>下端→両サイド→上端</b>の順で防水テープ。<b>先張り防水シート/両面テープ</b>で三面交点の水みちを断つ。',
     '貫通配管・フードは<b>ブチルで四周＋逆さ胴縁で水を切る</b>。シートの破れ・タッカー穴は補修テープ。',
     '胴縁で通気層を確保（通気止めしない）。'],
-  mats:[{n:'透湿防水シート',spec:'JIS A 6111',unit:'巻',pick:'外壁面積÷有効45㎡×1.15'},
-        {n:'防水テープ',spec:'両面/片面 50/75',unit:'巻',pick:'開口延長＋貫通部'},
+  mats:[{n:'透湿防水シート',spec:'JIS A 6111',sref:'wp_sheet',unit:'巻',pick:'外壁面積÷有効45㎡×1.15'},
+        {n:'防水テープ',spec:'両面/片面 50/75',sref:'wp_tape',unit:'巻',pick:'開口延長＋貫通部'},
         {n:'通気胴縁',spec:'15×45等',unit:'本',pick:'柱間ピッチ455で本数'}],
   insp:[{by:'jio',if:'jio',when:'外装材を張る前（防水検査）',check:'JIO外装下地/防水検査：シート重ね・サッシ四周防水・貫通部・破れ',photo:true,hide:'サイディング/塗り壁で完全に隠れる＝雨漏り最頻部位'},
         {by:'shanai',when:'外装前',check:'サッシ三面交点・重ね代・破れ補修（社内、全開口）',photo:true,hide:''}],
@@ -289,12 +305,12 @@ const PROCESS=[
   ky:'足場上・開口部からの墜落。カッター切創。テープ作業の無理な体勢。',
   rework:[{f:'サッシ四周の防水順序ミス・重ね逆で雨漏り→外装/内装/断熱まで大規模やり直し（クレーム最多）',p:'下→横→上の順を徹底、三面交点は先張りで。全開口を検査前に写真。'}]
 },
-{ id:'dannetsu', name:'断熱・気密', order:7,
+{ id:'dannetsu', name:'断熱・気密', order:7, specRefs:['ins_mat'],
   steps:[
     '<b>隙間なく充填</b>（袋入りGWは耳を留め、たるみ・欠損なし）。設備配管/配線裏も切り込んで充填。',
     '<b>防湿気密シート</b>は室内側に連続、重ね・気密テープ。コンセントボックスは気密処理。',
     '<b>断熱欠損（間仕切り取合い・天井際・小屋裏）</b>を作らない。'],
-  mats:[{n:'グラスウール等',spec:'指定 厚/密度',unit:'袋',pick:'外皮面積で拾う'},
+  mats:[{n:'グラスウール等',spec:'指定 厚/密度',sref:'ins_mat',unit:'袋',pick:'外皮面積で拾う'},
         {n:'防湿気密シート',spec:'0.2mm',unit:'巻',pick:'室内側面積×1.1'},
         {n:'気密テープ',spec:'-',unit:'巻',pick:'継目延長'}],
   insp:[{by:'shanai',when:'ボードで塞ぐ前',check:'断熱の充填状態・欠損・気密シート連続（社内）',photo:true,hide:'ボードを張ると断熱欠損は見えない＝結露/性能未達の原因'}],
@@ -302,15 +318,15 @@ const PROCESS=[
   ky:'GW繊維の吸込み・かゆみ（防塵マスク・長袖）。脚立・小屋裏の踏み抜き。',
   rework:[{f:'断熱欠損・気密不良→UA/C値未達、内部結露。ハゼモトの高性能（UA0.46/C0.4）を落とす',p:'塞ぐ前に「全室 断熱写真」。取合い・配管裏を重点確認。'}]
 },
-{ id:'shorei', name:'省令準耐火 下地（天井・壁ボード・FS）', order:8, badge:'F',
+{ id:'shorei', name:'省令準耐火 下地（天井・壁ボード・FS）', order:8, badge:'F', specRefs:['board_kyoka','board_screw','board_pitch_f','dim_shitaji'],
   steps:[
     '<b>石膏ボードは仕様書指定の種類・厚さ</b>（例：強化石膏ボード12.5mm）で張る。<b>目地は下地上、突付けは避け隙間なく</b>。',
     '<b>ビス/釘ピッチを規定どおり</b>（例：周辺100・中間150〜200）。留め付け不足・浮きなし。',
     '<b>ファイヤーストップ</b>：壁と天井・上下階の取合い、間仕切り上部の小屋裏/天井裏に、火の通り道を<b>GW充填やボードでふさぐ</b>。',
     '柱・梁の<b>被覆（あらわしにしない部分）</b>、点検口・階段・PS廻りのボード連続を切らさない。',
     '下地木材は<b>幅45mm以上</b>を確保、ボード端部が下地に載るように割付。'],
-  mats:[{n:'石膏ボード',spec:'強化12.5mm 等（仕様指定）',unit:'枚',pick:'施工面積÷1.656×1.1'},
-        {n:'ボードビス',spec:'32/41mm 指定',unit:'箱',pick:'ボード1枚あたり約40本'},
+  mats:[{n:'石膏ボード',spec:'強化12.5mm 等（仕様指定）',sref:'board_kyoka',unit:'枚',pick:'施工面積÷1.656×1.1'},
+        {n:'ボードビス',spec:'32/41mm 指定',sref:'board_screw',unit:'箱',pick:'ボード1枚あたり約40本'},
         {n:'ファイヤーストップ材',spec:'GW/ボード端材',unit:'式',pick:'取合い・区画箇所数'}],
   insp:[{by:'jio',if:'jio',when:'内装仕上げ前',check:'省令準耐火の下地検査：ボード種類/厚/張り方・FS・被覆（JIO/機構仕様）',photo:true,hide:'クロス/仕上げを張ると下地は確認不能'},
         {by:'shanai',when:'仕上げ前',check:'ボード種類・ビスピッチ・FS位置を仕様書と全室照合（社内）',photo:true,hide:''}],
@@ -331,7 +347,7 @@ const PROCESS=[
   ky:'外部足場・高所。',
   rework:[{f:'延焼範囲の窓が非防火品→完了検査で不合格、サッシ交換（外装解体を伴う）',p:'着工時に延焼ライン図で対象開口を確定→防火品番で発注・受入検査。'}]
 },
-{ id:'zoushita', name:'内部造作 下地（間仕切り・補強下地）', order:10,
+{ id:'zoushita', name:'内部造作 下地（間仕切り・補強下地）', order:10, specRefs:['dim_mabashira','dim_shitaji'],
   steps:[
     '間仕切りの<b>墨出し</b>、間柱・胴縁を455ピッチ等で。ボード目地・出隅入隅に下地を通す。',
     '<b>重量物用の下地補強</b>を先行：手すり・カウンター・TV壁掛け・吊戸棚・タオル掛け・エコカラット等（施主要望リストと照合）。',
@@ -365,6 +381,67 @@ const CALC={
   yane:{inputs:[{k:'a',l:'屋根面積',u:'㎡'}],out:v=>[`野地板 ≒ ${Math.ceil(v.a/1.656*1.1)} 枚`,`ルーフィング ≒ ${Math.ceil(v.a/21*1.15)} 巻(21㎡)`]},
   dannetsu:{inputs:[{k:'a',l:'外皮(壁+天井)面積',u:'㎡'}],out:v=>[`GW ≒ ${Math.ceil(v.a/ (0.435*2.74) )} 袋(目安)`,`気密シート ≒ ${Math.ceil(v.a*1.1/50)} 巻(50㎡)`]},
 };
+
+/* =========================================================
+   ハゼモト標準仕様マスタ（編集式・localStorage保存）
+   初期値は一般的な代表値の「仮」。現場で実値に上書きする。
+========================================================= */
+const SPEC_DEFAULT={
+  // 石膏ボード
+  board_kyoka:{cat:'石膏ボード',label:'省令準耐火 ボード（種類・厚・品番）',val:'強化石膏ボード 12.5mm（例：吉野石膏 タイガーボードタイプZ）'},
+  board_screw:{cat:'石膏ボード',label:'ボードビス（径長）',val:'φ3.5×32mm（下地12.5mm用）／二重張りは41mm'},
+  board_pitch_f:{cat:'石膏ボード',label:'ボードビスピッチ 省令準耐火',val:'周辺100・中間150'},
+  board_std:{cat:'石膏ボード',label:'一般部 ボード',val:'石膏ボード 12.5mm'},
+  board_pitch_s:{cat:'石膏ボード',label:'ボードビスピッチ 一般部',val:'周辺150・中間200'},
+  // 構造用面材
+  menzai:{cat:'構造用面材',label:'面材（種類・厚）',val:'構造用合板 9mm（またはダイライトMS 9mm）'},
+  menzai_nail:{cat:'構造用面材',label:'面材 釘',val:'N50（ダイライトはGNF40）'},
+  menzai_pitch:{cat:'構造用面材',label:'面材 釘ピッチ',val:'外周100・中通り200'},
+  // 耐震金物
+  km_chutou:{cat:'耐震金物',label:'柱頭柱脚 金物',val:'Zマーク 山形プレートVP／コーナー金物CP（N値で選定）'},
+  km_hd:{cat:'耐震金物',label:'ホールダウン',val:'HD-B10/15/20/25（N値計算で決定）'},
+  km_suji:{cat:'耐震金物',label:'筋かい 金物',val:'筋かいプレートBP／BP-2'},
+  km_hakoita:{cat:'耐震金物',label:'羽子板ボルト・その他',val:'羽子板ボルトSB・F／短ざく金物／あおり止めST・SF'},
+  km_nail:{cat:'耐震金物',label:'金物 留付け',val:'専用釘ZN40/ZN65・専用ビス（金物指定の種類・本数を全数）'},
+  // 標準寸法・下地
+  dim_dodai:{cat:'標準寸法・下地',label:'土台',val:'桧 105角 防腐防蟻処理'},
+  dim_hashira:{cat:'標準寸法・下地',label:'柱（通し柱／管柱）',val:'桧 105角／管柱 集成材105角'},
+  dim_mabashira:{cat:'標準寸法・下地',label:'間柱',val:'27×105 @455'},
+  dim_shitaji:{cat:'標準寸法・下地',label:'下地 受け材 幅',val:'45mm以上（ボード端部が載る割付）'},
+  dim_noki:{cat:'標準寸法・下地',label:'天井下地（野縁）',val:'野縁 @303〜455'},
+  dim_douchi:{cat:'標準寸法・下地',label:'通気胴縁',val:'15×45 @455'},
+  // 防水・断熱
+  wp_sheet:{cat:'防水・断熱',label:'透湿防水シート',val:'JIS A 6111（例：デュポン タイベック等）'},
+  wp_tape:{cat:'防水・断熱',label:'防水テープ',val:'両面ブチル 75mm／片面 50mm'},
+  wp_roof:{cat:'防水・断熱',label:'ルーフィング',val:'改質アスファルトルーフィング940以上'},
+  ins_mat:{cat:'防水・断熱',label:'断熱材（ハゼモト高性能仕様）',val:'高性能GW16K 105mm 等（UA0.46・C0.4を満たす仕様）'},
+};
+let SPEC=loadSpec();
+function loadSpec(){
+  try{const s=JSON.parse(localStorage.getItem('daiku_spec')||'null');
+    if(!s) return structuredCloneSafe(SPEC_DEFAULT);
+    // 既定キーを土台に、保存値のvalを上書き（キー追加に強い）
+    const m=structuredCloneSafe(SPEC_DEFAULT);
+    Object.keys(m).forEach(k=>{ if(s[k]&&typeof s[k].val==='string') m[k].val=s[k].val; });
+    return m;
+  }catch(e){return structuredCloneSafe(SPEC_DEFAULT);}
+}
+function structuredCloneSafe(o){return JSON.parse(JSON.stringify(o));}
+function saveSpec(){try{localStorage.setItem('daiku_spec',JSON.stringify(SPEC));}catch(e){}}
+function specVal(k){return (SPEC[k]&&SPEC[k].val)||'';}
+
+function renderSpecForm(){
+  const box=$('#specForm');const cats={};
+  Object.entries(SPEC).forEach(([k,s])=>{(cats[s.cat]=cats[s.cat]||[]).push([k,s]);});
+  box.innerHTML=Object.entries(cats).map(([cat,arr])=>`
+    <div style="margin-bottom:12px">
+      <div style="font-weight:800;color:var(--navy);font-size:14px;border-left:4px solid var(--accent);padding-left:8px;margin-bottom:6px">${cat}</div>
+      ${arr.map(([k,s])=>`<label style="margin:6px 0 3px">${s.label}</label>
+        <input type="text" data-sk="${k}" value="${(s.val||'').replace(/"/g,'&quot;')}">`).join('')}
+    </div>`).join('');
+  box.querySelectorAll('input[data-sk]').forEach(inp=>inp.oninput=()=>{SPEC[inp.dataset.sk].val=inp.value;saveSpec();});
+}
+$('#specReset').onclick=()=>{if(!confirm('標準仕様を初期値（仮）に戻しますか？')) return;localStorage.removeItem('daiku_spec');SPEC=loadSpec();renderSpecForm();toast('初期値に戻しました');};
 
 /* ===== 条件・工程選択 ===== */
 const conds={fireproof:true,enen:true,jio:true};
@@ -408,11 +485,18 @@ function genSheet(){
       ${p.badge==='F'&&conds.fireproof?'<span class="badge bF">省令準耐火</span>':''}${p.badge==='E'&&conds.enen?'<span class="badge bE">延焼</span>':''}</div><div class="bd">`;
     // 手順
     h+=`<div class="blk steps"><div class="t">🔧 作業手順・納まり</div><ol class="steps-list">${p.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>`;
+    // ハゼモト標準仕様（設定タブの値を反映）
+    const srefs=(p.specRefs||[]).filter(k=>SPEC[k]);
+    if(srefs.length){
+      h+=`<div class="hzspec"><div class="t">🏠 ハゼモト標準仕様（この現場の既定）</div>
+        <table class="mat-tbl">${srefs.map(k=>`<tr><td style="width:42%;color:var(--sub)">${esc(SPEC[k].label)}</td><td><b>${esc(SPEC[k].val)}</b></td></tr>`).join('')}</table>
+        <div class="muted" style="margin-top:4px">値は「🏠 標準仕様」タブで変更できます（この端末に保存）。</div></div>`;
+    }
     // 材料 + 計算
     if(p.mats&&p.mats.length){
       h+=`<div class="blk mat"><div class="t">📦 材料・拾い方</div>
         <table class="mat-tbl"><tr><th>材料</th><th>仕様</th><th>単位</th><th>拾い方</th></tr>
-        ${p.mats.map(m=>`<tr><td>${esc(m.n)}</td><td>${esc(m.spec)}</td><td class="c">${esc(m.unit)}</td><td>${esc(m.pick)}</td></tr>`).join('')}</table>`;
+        ${p.mats.map(m=>`<tr><td>${esc(m.n)}</td><td>${esc(m.sref&&SPEC[m.sref]?SPEC[m.sref].val:m.spec)}</td><td class="c">${esc(m.unit)}</td><td>${esc(m.pick)}</td></tr>`).join('')}</table>`;
       if(CALC[p.id]){
         const cid='calc_'+p.id;
         h+=`<div class="calc" id="${cid}"><div class="cin">
@@ -513,6 +597,9 @@ $('#cvGen').onclick=()=>{
 - 工法：${$('#kouhou').value==='2x4'?'枠組壁工法（2×4）':'在来軸組工法'}
 - 適用仕様：${cs||'（一般）'}
 - 対象工程・部位：${part||'（指定なし）'}
+
+# ハゼモト標準仕様（既定。設計図書に別途指定が無ければこれに合わせる）
+${Object.values(SPEC).map(s=>`- ${s.label}：${s.val}`).join('\n')}
 
 # 変換元（設計図書・仕様書の抜粋）
 """
