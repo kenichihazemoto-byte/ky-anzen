@@ -37,6 +37,7 @@
   .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:14px;cursor:pointer;user-select:none;transition:.12s;font-weight:600}
   .chip:hover{border-color:var(--navy2)}
   .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  #procChips .chip.on::before{content:"✓ ";font-weight:900}
   .toggle{display:flex;gap:8px;flex-wrap:wrap}
   .tg{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-size:13.5px;cursor:pointer;font-weight:700;color:var(--sub);display:flex;align-items:center;gap:6px}
   .tg.on{color:#fff}
@@ -152,6 +153,7 @@
 
   <div class="card no-print">
     <h2 class="sec">2. 出す工程を選ぶ</h2>
+    <p class="muted" style="margin:-4px 0 8px">出したい工程をタップ（<b style="color:var(--navy)">濃い青＝選択中✓</b>）。まとめて全部出すなら「全工程を選択」。</p>
     <div class="chips" id="procChips"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn btn-sub" id="selAll">全工程を選択</button>
@@ -540,11 +542,11 @@ syncCompanySpec(false);
 /* ===== 条件・工程選択 ===== */
 const conds={fireproof:true,enen:true,jio:true};
 $$('#conds .tg').forEach(t=>t.onclick=()=>{const k=t.dataset.k;conds[k]=!conds[k];t.classList.toggle('on',conds[k]);});
-const selProc=new Set(PROCESS.map(p=>p.id));
+const selProc=new Set();
 function buildChips(){
   const c=$('#procChips');c.innerHTML='';
   PROCESS.forEach(p=>{
-    const el=document.createElement('span');el.className='chip on';el.dataset.id=p.id;
+    const el=document.createElement('span');el.className='chip';el.dataset.id=p.id;
     el.innerHTML=p.name.replace(/（.*/,'')+(p.badge==='F'?' <span class="badge bF">省令</span>':p.badge==='E'?' <span class="badge bE">延焼</span>':'');
     el.onclick=()=>{selProc.has(p.id)?selProc.delete(p.id):selProc.add(p.id);el.classList.toggle('on');};
     c.appendChild(el);
@@ -561,7 +563,7 @@ function whoLabel(by){return {jio:'JIO 第三者検査',shanai:'社内検査',gy
 
 function genSheet(){
   const chosen=PROCESS.filter(p=>selProc.has(p.id)).sort((a,b)=>a.order-b.order);
-  if(!chosen.length){toast('工程を選んでください');return;}
+  if(!chosen.length){$('#genOut').innerHTML='';toast('工程をタップして選んでください');return;}
   const site=$('#site').value||'（現場名）', daiku=$('#daiku').value||'', day=$('#day').value;
   let h=`<div class="card"><h2 class="sec">作業指示書</h2>
     <div class="row" style="font-size:13.5px">
