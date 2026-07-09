@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ハゼモト建設 電気設備チェッカー & 配線図</title>
+<meta name="description" content="間取りから専用回路の漏れ・コンセント不足を自動チェック。コンセント／照明／スイッチの配線図もその場で作図。" />
+<meta name="theme-color" content="#1b3a5b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="電気設備" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231b3a5b'/%3E%3Ctext y='72' x='50' font-size='58' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --navy:#1b3a5b; --navy2:#24527d; --accent:#ff7a00; --bg:#f4f6f9;
+    --card:#fff; --line:#e2e8f0; --ink:#1f2937; --sub:#64748b;
+    --ok:#16a34a; --warn:#e67e22; --bad:#c0392b; --teal:#0f766e;
+    --v200:#7c3aed; --blue:#0369a1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.6}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:12px 16px 0;position:sticky;top:0;z-index:20}
+  header h1{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+  header .sub{font-size:11px;color:#cbd5e1;margin:2px 0 0}
+  .tabs{display:flex;margin-top:10px}
+  .tab{flex:1;text-align:center;padding:11px 4px;font-size:14px;font-weight:700;color:#cbd5e1;cursor:pointer;border-bottom:3px solid transparent}
+  .tab.on{color:#fff;border-bottom-color:var(--accent)}
+  .wrap{max-width:860px;margin:0 auto;padding:16px 14px 90px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h2.sec{font-size:15px;margin:0 0 12px;color:var(--navy);border-left:5px solid var(--accent);padding-left:10px}
+  label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px;font-weight:600}
+  input[type=text],input[type=number],select,textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:14px;cursor:pointer;user-select:none;transition:.12s;font-weight:600}
+  .chip:hover{border-color:var(--navy2)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip small{font-weight:600;opacity:.7;font-size:11px}
+  .btn{display:block;width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.3)}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-sub{background:#eef2f7;color:var(--navy);border:1.5px solid var(--line);font-size:14px;padding:11px}
+  .btn-ghost{background:#fff;color:var(--navy);border:1.5px solid var(--line);font-size:13px;padding:9px}
+  .btn-danger{background:#fff;color:var(--bad);border:1.5px solid #f3c9c2}
+  .hidden{display:none}
+  .muted{font-size:12px;color:var(--sub)}
+  /* 部屋カード */
+  .room{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;position:relative;background:#fbfcfe}
+  .room .del{position:absolute;top:8px;right:8px;background:#fff;border:1.5px solid #f3c9c2;color:var(--bad);border-radius:8px;font-size:12px;padding:4px 9px;cursor:pointer;font-weight:700}
+  .room .hd{display:flex;gap:8px;align-items:flex-end}
+  .room .hd .nm{flex:2}.room .hd .tt{flex:1}
+  .badge{display:inline-block;font-size:11px;font-weight:800;color:#fff;border-radius:6px;padding:2px 8px;white-space:nowrap}
+  .bOK{background:var(--ok)}.bWARN{background:var(--warn)}.bBAD{background:var(--bad)}.b200{background:var(--v200)}.bInfo{background:var(--blue)}
+  /* 結果 */
+  .result h3{font-size:15px;color:var(--navy);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+  .kpi{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .kpi .box{flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kpi .box .n{font-size:22px;font-weight:800;color:var(--navy)}
+  .kpi .box .l{font-size:12px;color:var(--sub)}
+  .issue{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+  .issue .ic{font-size:18px;flex:0 0 auto}
+  .issue.warn{background:#fff8ef;border-color:#f6d9b3}
+  .issue.bad{background:#fdf2f0;border-color:#f3c9c2}
+  .issue.ok{background:#f0fbf4;border-color:#bfe6cd}
+  .issue .t{font-weight:700;font-size:14px}
+  .issue .d{font-size:13px;color:#475569}
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 8px;text-align:left}
+  table.tbl th{background:#f1f5f9;font-size:12px;color:var(--sub)}
+  table.tbl td.c{text-align:center}
+  /* 図面エディタ */
+  .toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .pal{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .palbtn{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:70px;font-size:10.5px;font-weight:700;color:var(--navy);line-height:1.15;text-align:center}
+  .palbtn:hover{border-color:var(--navy2)}
+  .palbtn.on{border-color:var(--accent);background:#fff5eb;box-shadow:0 0 0 2px rgba(255,122,0,.15)}
+  .palbtn svg{width:34px;height:34px;margin-bottom:2px}
+  .palcat{font-size:11px;font-weight:800;color:var(--sub);width:100%;margin:6px 0 2px}
+  #cvWrap{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;touch-action:none}
+  #cv{display:block;width:100%;height:auto;background:
+     linear-gradient(#eef2f7 1px,transparent 1px),
+     linear-gradient(90deg,#eef2f7 1px,transparent 1px);
+     background-size:20px 20px;cursor:crosshair}
+  .selbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:8px;background:#f8fafc;border:1px solid var(--line);border-radius:10px;font-size:13px}
+  .selbar.hidden{display:none}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-top:8px}
+  .legend .li{display:flex;align-items:center;gap:5px}
+  .legend .li svg{width:26px;height:26px}
+  .hint{background:#eff6ff;border:1px solid #cfe0f5;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#1e40af;margin-bottom:10px}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:50;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:.95}
+  @media print{header,.tabs,.toolbar,.pal,.selbar,.no-print{display:none!important}.wrap{padding:0}.card{box-shadow:none;border:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ 電気設備チェッカー &amp; 配線図</h1>
+  <div class="sub">ハゼモト建設 ／ 専用回路の漏れ・コンセント不足チェック＋配線図の下書き</div>
+  <div class="tabs">
+    <div class="tab on" data-tab="check">🔍 チェッカー</div>
+    <div class="tab" data-tab="draw">✏️ 配線図</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 10px">
+    <a href="index.html" style="padding:6px 10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:#fff;text-decoration:none;font-size:12px;font-weight:700">🦺 安全KY</a>
+    <a href="sagyo.html" style="padding:6px 10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:#fff;text-decoration:none;font-size:12px;font-weight:700">🔨 作業指示書</a>
+    <a href="saiko.html" style="padding:6px 10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:#fff;text-decoration:none;font-size:12px;font-weight:700">☀️ 採光</a>
+    <a href="youheki.html" style="padding:6px 10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:#fff;text-decoration:none;font-size:12px;font-weight:700">🧱 擁壁</a>
+  </div>
+</header>
+
+<!-- ============ タブ1：チェッカー ============ -->
+<div class="wrap" id="tab-check">
+
+  <div class="card">
+    <h2 class="sec">1. 住まいの条件</h2>
+    <div class="row">
+      <div><label>延床面積（㎡）</label><input type="number" id="area" value="105" min="20" step="1"></div>
+      <div><label>階数</label>
+        <select id="floors"><option>平屋</option><option selected>2階建</option><option>3階建</option></select>
+      </div>
+    </div>
+    <label>熱源・給湯</label>
+    <div class="chips" id="energyChips">
+      <span class="chip" data-k="ih">IHクッキングヒーター</span>
+      <span class="chip" data-k="ecocute">エコキュート/電気温水器</span>
+      <span class="chip" data-k="allele">オール電化</span>
+      <span class="chip" data-k="ev">EV充電（電気自動車）</span>
+      <span class="chip" data-k="floorheat">床暖房（電気）</span>
+    </div>
+    <p class="muted" style="margin-top:8px">※ 該当するものをタップ。IH/エコキュート/EVは200V専用回路が必要です。</p>
+  </div>
+
+  <div class="card">
+    <h2 class="sec">2. 部屋ごとの設定</h2>
+    <p class="muted">部屋を追加し、広さと「置く家電」をタップ。専用回路が要る家電は自動で判定します。</p>
+    <div id="rooms"></div>
+    <button class="btn btn-sub" id="addRoom">＋ 部屋を追加</button>
+    <div class="row" style="margin-top:6px">
+      <button class="btn btn-ghost" data-preset="std">標準の間取りを入れる</button>
+      <button class="btn btn-ghost" data-preset="clear">全部消す</button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="runCheck">⚡ チェックする</button>
+
+  <div id="checkResult" class="hidden"></div>
+</div>
+
+<!-- ============ タブ2：配線図 ============ -->
+<div class="wrap hidden" id="tab-draw">
+  <div class="hint">① 下の記号をタップ → ② 図面の上をタップで配置。置いたものはドラッグで移動、タップで選択して回転・削除・名前変更ができます。「部屋」で四角い間取りを、「配線」でスイッチと照明を線で結べます。</div>
+
+  <div class="toolbar no-print">
+    <button class="btn-ghost" id="addRoomRect" style="width:auto;padding:9px 12px">▭ 部屋を追加</button>
+    <button class="btn-ghost" id="wireMode" style="width:auto;padding:9px 12px">〜 配線モード</button>
+    <button class="btn-ghost" id="undo" style="width:auto;padding:9px 12px">↶ 元に戻す</button>
+    <button class="btn-ghost" id="clearAll" style="width:auto;padding:9px 12px">🗑 全消去</button>
+    <button class="btn-ghost" id="exportPng" style="width:auto;padding:9px 12px">🖼 PNG保存</button>
+    <button class="btn-ghost" id="saveJson" style="width:auto;padding:9px 12px">💾 保存</button>
+    <button class="btn-ghost" id="loadJson" style="width:auto;padding:9px 12px">📂 読込</button>
+    <button class="btn-ghost" id="printDraw" style="width:auto;padding:9px 12px">🖨 印刷</button>
+    <input type="file" id="fileInput" accept="application/json" class="hidden">
+  </div>
+
+  <div class="pal no-print" id="palette"></div>
+
+  <div id="cvWrap">
+    <svg id="cv" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="selbar hidden no-print" id="selbar">
+    <span id="selName" style="font-weight:700"></span>
+    <button class="btn-ghost" id="selRelabel" style="width:auto;padding:6px 10px">✎ 名前</button>
+    <button class="btn-ghost" id="selRotate" style="width:auto;padding:6px 10px">⟳ 回転</button>
+    <button class="btn-ghost" id="selBigger" style="width:auto;padding:6px 10px">＋大きく</button>
+    <button class="btn-ghost" id="selSmaller" style="width:auto;padding:6px 10px">－小さく</button>
+    <button class="btn-danger" id="selDelete" style="width:auto;padding:6px 10px">削除</button>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2 class="sec">凡例（記号の意味）</h2>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   共通
+========================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+$$('.tab').forEach(t=>t.onclick=()=>{
+  $$('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  $('#tab-check').classList.toggle('hidden',t.dataset.tab!=='check');
+  $('#tab-draw').classList.toggle('hidden',t.dataset.tab!=='draw');
+});
+
+/* =========================================================
+   ① チェッカー：ドメイン知識
+   出典の考え方：内線規程（コンセント数の目安・専用回路）＋一般的な住宅設計慣行
+========================================================= */
+// 家電マスタ：専用回路の要否・電圧・消費電力(W目安)
+const APPLI = {
+  aircon:   {n:'エアコン',        dedicated:true,  volt:'100/200V', w:1200, note:'各室ごとに専用回路。畳数が大きいと200V'},
+  ih:       {n:'IHヒーター',      dedicated:true,  volt:'200V',    w:5800, note:'200V20A専用回路が必須'},
+  microwave:{n:'電子レンジ',      dedicated:true,  volt:'100V',    w:1400, note:'15A専用回路を推奨'},
+  dishwash: {n:'食洗機',          dedicated:true,  volt:'100V',    w:1300, note:'専用回路を推奨'},
+  fridge:   {n:'冷蔵庫',          dedicated:true,  volt:'100V',    w:300,  note:'専用回路を推奨（他と共用でブレーカー落ち防止）'},
+  ricecook: {n:'炊飯器',          dedicated:false, volt:'100V',    w:1300, note:'キッチン多口と共用可'},
+  kettle:   {n:'電気ケトル/ポット',dedicated:false, volt:'100V',    w:1300, note:'同時使用に注意'},
+  washer:   {n:'洗濯機',          dedicated:true,  volt:'100V',    w:600,  note:'アース付・専用回路を推奨'},
+  dryer:    {n:'衣類乾燥機',      dedicated:true,  volt:'100/200V',w:1300, note:'専用回路。ガス式除く'},
+  washlet:  {n:'温水洗浄便座',    dedicated:true,  volt:'100V',    w:1200, note:'アース付専用回路を推奨'},
+  ecocute:  {n:'エコキュート',    dedicated:true,  volt:'200V',    w:1500, note:'200V専用回路'},
+  ev:       {n:'EV充電',          dedicated:true,  volt:'200V',    w:3000, note:'200V専用回路'},
+  floorheat:{n:'電気床暖房',      dedicated:true,  volt:'100/200V',w:1500, note:'専用回路'},
+  tv:       {n:'テレビ/AV',       dedicated:false, volt:'100V',    w:300,  note:'TV端子＋多口コンセント'},
+  pc:       {n:'PC/デスク',       dedicated:false, volt:'100V',    w:400,  note:'LAN配線もあると良い'},
+  vacuum:   {n:'掃除機/充電',     dedicated:false, volt:'100V',    w:1000, note:''},
+};
+// 部屋タイプ：既定の畳数・そこで想定される家電チップ候補
+const ROOMTYPES = {
+  'LDK':      {tatami:16, k:true,  cand:['aircon','ih','microwave','dishwash','fridge','ricecook','kettle','tv','pc']},
+  'キッチン': {tatami:4,  k:true,  cand:['ih','microwave','dishwash','fridge','ricecook','kettle']},
+  '洋室':     {tatami:6,  k:false, cand:['aircon','tv','pc','vacuum']},
+  '和室':     {tatami:6,  k:false, cand:['aircon','tv']},
+  '主寝室':   {tatami:8,  k:false, cand:['aircon','tv','pc']},
+  '洗面脱衣': {tatami:3,  k:false, cand:['washer','dryer','vacuum']},
+  'トイレ':   {tatami:1,  k:false, cand:['washlet']},
+  '玄関/廊下':{tatami:3,  k:false, cand:['vacuum']},
+  '書斎/WIC': {tatami:3,  k:false, cand:['pc','vacuum']},
+};
+// コンセント口数の目安（内線規程ベースの慣行）
+function recommendOutlets(type,tatami){
+  const t=ROOMTYPES[type]||{};
+  if(type==='トイレ') return 2;          // 便座＋掃除機/予備
+  if(type==='洗面脱衣') return Math.max(3,Math.round(tatami)); // 洗濯機・ドライヤー・洗面家電
+  if(t.k) return Math.max(4,Math.round(tatami/2)+2); // キッチン/LDKは加算
+  return Math.max(2,Math.round(tatami/2)); // 一般居室：約2畳に1口
+}
+
+// ---- 部屋UI ----
+let roomSeq=0;
+function roomCard(data){
+  data=data||{};
+  const id='rm'+(++roomSeq);
+  const div=document.createElement('div');
+  div.className='room'; div.dataset.id=id;
+  const opts=Object.keys(ROOMTYPES).map(t=>`<option ${data.type===t?'selected':''}>${t}</option>`).join('');
+  div.innerHTML=`
+    <button class="del">削除</button>
+    <div class="hd">
+      <div class="nm"><label>部屋の名前</label><input type="text" class="r-name" value="${data.name||''}" placeholder="例：1F LDK"></div>
+      <div class="tt"><label>用途</label><select class="r-type">${opts}</select></div>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <div><label>広さ（畳）</label><input type="number" class="r-tatami" value="${data.tatami||''}" min="1" step="0.5"></div>
+      <div><label>コンセント予定数（口）</label><input type="number" class="r-outlet" value="${data.outlet!=null?data.outlet:''}" min="0" step="1" placeholder="未定でOK"></div>
+    </div>
+    <label>この部屋に置く家電（タップ）</label>
+    <div class="chips r-appli"></div>
+  `;
+  const typeSel=div.querySelector('.r-type');
+  const tatami=div.querySelector('.r-tatami');
+  const chips=div.querySelector('.r-appli');
+  const selected=new Set(data.appli||[]);
+  function renderChips(){
+    const cand=(ROOMTYPES[typeSel.value]||{}).cand||[];
+    chips.innerHTML=cand.map(k=>`<span class="chip ${selected.has(k)?'on':''}" data-k="${k}">${APPLI[k].n}${APPLI[k].dedicated?' <small>専用</small>':''}</span>`).join('');
+    chips.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      const k=c.dataset.k; selected.has(k)?selected.delete(k):selected.add(k); c.classList.toggle('on');
+    });
+  }
+  function applyType(){
+    const t=ROOMTYPES[typeSel.value];
+    if(t&&!tatami.value) tatami.value=t.tatami;
+    renderChips();
+  }
+  typeSel.onchange=()=>{ // 用途変更で候補入替（既存選択は保持）
+    const t=ROOMTYPES[typeSel.value]; if(t) tatami.value=t.tatami; renderChips();
+  };
+  div.querySelector('.del').onclick=()=>div.remove();
+  div._get=()=>({
+    name:div.querySelector('.r-name').value||typeSel.value,
+    type:typeSel.value,
+    tatami:parseFloat(tatami.value)||ROOMTYPES[typeSel.value].tatami,
+    outlet:div.querySelector('.r-outlet').value===''?null:parseInt(div.querySelector('.r-outlet').value),
+    appli:[...selected]
+  });
+  $('#rooms').appendChild(div);
+  applyType();
+  return div;
+}
+$('#addRoom').onclick=()=>roomCard({});
+$$('[data-preset]').forEach(b=>b.onclick=()=>{
+  $('#rooms').innerHTML='';
+  if(b.dataset.preset==='clear') return;
+  [
+    {name:'1F LDK',type:'LDK',tatami:18,appli:['aircon','ih','microwave','dishwash','fridge','ricecook','tv']},
+    {name:'1F 洗面脱衣',type:'洗面脱衣',tatami:3,appli:['washer','dryer']},
+    {name:'1F トイレ',type:'トイレ',tatami:1,appli:['washlet']},
+    {name:'1F 和室',type:'和室',tatami:6,appli:['aircon','tv']},
+    {name:'2F 主寝室',type:'主寝室',tatami:8,appli:['aircon','tv','pc']},
+    {name:'2F 洋室A',type:'洋室',tatami:6,appli:['aircon']},
+    {name:'2F 洋室B',type:'洋室',tatami:6,appli:['aircon']},
+    {name:'2F トイレ',type:'トイレ',tatami:1,appli:['washlet']},
+  ].forEach(r=>roomCard(r));
+});
+
+// ---- 判定ロジック ----
+function runCheck(){
+  const rooms=$$('#rooms .room').map(d=>d._get());
+  if(!rooms.length){toast('部屋を追加してください');return;}
+  const energy=new Set($$('#energyChips .chip.on').map(c=>c.dataset.k));
+  const area=parseFloat($('#area').value)||100;
+
+  const issues=[]; // {level:'ok|warn|bad', t, d}
+  const circuits=[]; // 専用回路の一覧 {name, volt}
+  let totalW=0, aircons=0;
+
+  // 家電から専用回路を収集
+  const dedCount={};
+  rooms.forEach(r=>{
+    r.appli.forEach(k=>{
+      const a=APPLI[k]; if(!a) return; totalW+=a.w;
+      if(k==='aircon') aircons++;
+      if(a.dedicated){
+        let volt=a.volt;
+        // エアコンは広い部屋=200V想定
+        if(k==='aircon') volt = r.tatami>=14?'200V':'100V';
+        circuits.push({name:`${r.name}：${a.n}`, volt});
+        dedCount[k]=(dedCount[k]||0)+1;
+      }
+    });
+  });
+  // 熱源チップからの専用回路（部屋で拾えていない分を補完）
+  if(energy.has('ih')&&!dedCount.ih) circuits.push({name:'キッチン：IHヒーター',volt:'200V'});
+  if(energy.has('ecocute')) circuits.push({name:'屋外：エコキュート',volt:'200V'});
+  if(energy.has('ev')) circuits.push({name:'屋外：EV充電',volt:'200V'});
+  if(energy.has('floorheat')&&!dedCount.floorheat) circuits.push({name:'LDK：電気床暖房',volt:'100/200V'});
+
+  // ---- コンセント数チェック ----
+  const outRows=[];
+  rooms.forEach(r=>{
+    const rec=recommendOutlets(r.type,r.tatami);
+    const planned=r.outlet;
+    let st;
+    if(planned==null) st={cls:'bInfo',txt:'未入力'};
+    else if(planned>=rec) st={cls:'bOK',txt:'OK'};
+    else if(planned>=rec-1) st={cls:'bWARN',txt:'やや不足'};
+    else st={cls:'bBAD',txt:'不足'};
+    outRows.push({r,rec,planned,st});
+    if(planned!=null&&planned<rec-1)
+      issues.push({level:'bad',t:`${r.name}：コンセント不足`,d:`目安 ${rec}口に対して ${planned}口。延長コード多用の原因になります。あと ${rec-planned}口の追加を検討。`});
+  });
+
+  // ---- 専用回路の“漏れ”チェック（よくある抜け） ----
+  const has=k=>rooms.some(r=>r.appli.includes(k))|| (k==='ih'&&energy.has('ih'))||(k==='ecocute'&&energy.has('ecocute'))||(k==='ev'&&energy.has('ev'));
+  const hasRoom=t=>rooms.some(r=>r.type===t);
+  // エアコン：居室にエアコンが1つも無い→注意
+  const livingRooms=rooms.filter(r=>['LDK','洋室','和室','主寝室'].includes(r.type));
+  livingRooms.forEach(r=>{
+    if(!r.appli.includes('aircon'))
+      issues.push({level:'warn',t:`${r.name}：エアコン専用回路の確認`,d:`居室ですがエアコンが未選択です。後付け予定なら専用回路（コンセント）を先行配線しておくと安心。`});
+  });
+  // トイレに温水便座回路
+  rooms.filter(r=>r.type==='トイレ').forEach(r=>{
+    if(!r.appli.includes('washlet'))
+      issues.push({level:'warn',t:`${r.name}：温水洗浄便座の回路`,d:`温水洗浄便座はアース付コンセント＋専用回路が基本。設置予定なら忘れず先行手配を。`});
+  });
+  // 洗面：洗濯・乾燥
+  rooms.filter(r=>r.type==='洗面脱衣').forEach(r=>{
+    if(!r.appli.includes('washer'))
+      issues.push({level:'warn',t:`${r.name}：洗濯機回路`,d:`洗濯機はアース付・専用回路が基本。ドラム式乾燥や乾燥機併設なら容量にも注意。`});
+  });
+  // キッチン多口
+  rooms.filter(r=>r.type==='LDK'||r.type==='キッチン').forEach(r=>{
+    if(r.outlet!=null&&r.outlet<4)
+      issues.push({level:'warn',t:`${r.name}：キッチン家電の口数`,d:`炊飯器・ケトル・レンジ等の同時使用が多い場所。カウンター上に2口×2ヶ所以上を推奨。`});
+  });
+  // オール電化なのに200V機器が無い
+  if(energy.has('allele')&&!circuits.some(c=>c.volt.includes('200V')))
+    issues.push({level:'warn',t:'オール電化と200V回路',d:'オール電化を選択していますが200V機器が見当たりません。IH・エコキュートの回路を確認してください。'});
+
+  // ---- 分電盤：必要分岐回路数 ----
+  const dedicated=circuits.length;
+  // 一般回路（照明・コンセント）：おおむね 10帖=約16.5㎡ ごとに1回路＋α
+  const generalCircuits=Math.max(4,Math.ceil(area/16));
+  const spare=Math.max(2,Math.round((dedicated+generalCircuits)*0.15)); // 予備15%（最低2）
+  const totalCircuits=dedicated+generalCircuits+spare;
+
+  // ---- 契約アンペアの目安（同時使用係数を掛けた簡易推定）----
+  // 主要大物のW合計に同時使用0.5、常時系はそのまま、を大まかに
+  let peakW = totalW*0.6 + (energy.has('ecocute')?0:0);
+  if(energy.has('allele')) peakW+=2000;
+  const ampere = Math.min(120, Math.max(30, Math.ceil((peakW/100)/10)*10)); // 100V換算・10A刻み
+  const suggestAmp = energy.has('allele')?'60A以上（オール電化は主開閉器60〜75Aが目安）':`${ampere}A前後`;
+
+  if(totalCircuits>12 && dedicated>=6)
+    issues.push({level:'ok',t:'分電盤は余裕を持った容量で',d:`専用回路が${dedicated}系統あります。20〜22回路以上の分電盤＋予備を確保しておくと将来の増設に強いです。`});
+
+  // ---- 描画 ----
+  const box=$('#checkResult'); box.classList.remove('hidden');
+  const badge=(s)=>`<span class="badge ${s.cls}">${s.txt}</span>`;
+  const issSorted=issues.sort((a,b)=>({bad:0,warn:1,ok:2}[a.level]-{bad:0,warn:1,ok:2}[b.level]));
+  const ic={bad:'⛔',warn:'⚠️',ok:'✅'};
+  box.innerHTML=`
+  <div class="card result">
+    <h2 class="sec">チェック結果</h2>
+    <div class="kpi">
+      <div class="box"><div class="n">${dedicated}</div><div class="l">専用回路（系統）</div></div>
+      <div class="box"><div class="n">${totalCircuits}</div><div class="l">分電盤 推奨 分岐回路数<br><span class="muted">一般${generalCircuits}＋専用${dedicated}＋予備${spare}</span></div></div>
+      <div class="box"><div class="n">${suggestAmp}</div><div class="l">契約容量の目安</div></div>
+    </div>
+
+    <h3>🔌 コンセント口数チェック</h3>
+    <table class="tbl">
+      <tr><th>部屋</th><th>広さ</th><th>目安</th><th>予定</th><th>判定</th></tr>
+      ${outRows.map(o=>`<tr>
+        <td>${o.r.name}</td><td class="c">${o.r.tatami}畳</td>
+        <td class="c">${o.rec}口</td>
+        <td class="c">${o.planned==null?'—':o.planned+'口'}</td>
+        <td class="c">${badge(o.st)}</td></tr>`).join('')}
+    </table>
+    <p class="muted" style="margin-top:6px">目安＝内線規程の考え方（居室は約2畳に1口、水回り・キッチンは加算）。設計時の最低ラインです。</p>
+
+    <h3>⚡ 専用回路が必要な機器（${dedicated}系統）</h3>
+    ${dedicated?`<table class="tbl">
+      <tr><th>回路</th><th>電圧</th></tr>
+      ${circuits.map(c=>`<tr><td>${c.name}</td><td class="c">${c.volt.includes('200')?'<span class="badge b200">'+c.volt+'</span>':c.volt}</td></tr>`).join('')}
+    </table>`:'<p class="muted">専用回路の対象機器が選ばれていません。</p>'}
+
+    <h3>📋 指摘・注意（${issSorted.length}件）</h3>
+    ${issSorted.length?issSorted.map(i=>`<div class="issue ${i.level}"><div class="ic">${ic[i.level]}</div><div><div class="t">${i.t}</div><div class="d">${i.d}</div></div></div>`).join('')
+      :'<div class="issue ok"><div class="ic">✅</div><div><div class="t">大きな漏れは見つかりませんでした</div><div class="d">最終的な回路割り・容量計算は電気工事店（有資格者）にご確認ください。</div></div></div>'}
+
+    <p class="muted" style="margin-top:10px">⚠️ 本ツールは設計初期の「抜け漏れ気づき」用の目安です。最終的な回路設計・負荷計算・法令適合（内線規程／電技）の判断は電気工事士・電気設備設計者が行ってください。</p>
+    <button class="btn btn-sub no-print" onclick="window.print()">🖨 この結果を印刷／PDF保存</button>
+  </div>`;
+  box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('#runCheck').onclick=runCheck;
+$$('#energyChips .chip').forEach(c=>c.onclick=()=>c.classList.toggle('on'));
+// 初期に標準間取りを1つ入れておく
+roomCard({name:'1F LDK',type:'LDK',tatami:18,appli:['aircon','ih','microwave','dishwash','fridge','ricecook','tv']});
+
+/* =========================================================
+   ② 配線図エディタ
+========================================================= */
+const cv=$('#cv');
+const SVGNS='http://www.w3.org/2000/svg';
+// 記号定義：glyph(色) はローカル座標 中心(0,0)・約28px。labelは下に表示
+const SYMBOLS={
+  // 電源
+  outlet2:{cat:'電源',label:'コンセント2口',color:'#1b3a5b',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="-4" y1="-4" x2="-4" y2="4" stroke="${c}" stroke-width="2"/><line x1="4" y1="-4" x2="4" y2="4" stroke="${c}" stroke-width="2"/><text y="16" font-size="8" text-anchor="middle" fill="${c}" font-weight="700">2</text>`},
+  outlet1:{cat:'電源',label:'コンセント1口',color:'#1b3a5b',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="0" y1="-4" x2="0" y2="4" stroke="${c}" stroke-width="2"/>`},
+  outletET:{cat:'電源',label:'アース付',color:'#0f766e',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="-4" y1="-4" x2="-4" y2="4" stroke="${c}" stroke-width="2"/><line x1="4" y1="-4" x2="4" y2="4" stroke="${c}" stroke-width="2"/><text y="17" font-size="8" text-anchor="middle" fill="${c}" font-weight="800">E</text>`},
+  outletWP:{cat:'電源',label:'防水',color:'#0369a1',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="-4" y1="-4" x2="-4" y2="4" stroke="${c}" stroke-width="2"/><line x1="4" y1="-4" x2="4" y2="4" stroke="${c}" stroke-width="2"/><text y="17" font-size="7" text-anchor="middle" fill="${c}" font-weight="800">WP</text>`},
+  outlet200:{cat:'電源',label:'200V',color:'#7c3aed',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2.4"/><line x1="-4" y1="-4" x2="-4" y2="4" stroke="${c}" stroke-width="2"/><line x1="4" y1="-4" x2="4" y2="4" stroke="${c}" stroke-width="2"/><text y="18" font-size="7" text-anchor="middle" fill="${c}" font-weight="800">200V</text>`},
+  outletEx:{cat:'電源',label:'専用回路',color:'#c0392b',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2.4"/><line x1="-4" y1="-4" x2="-4" y2="4" stroke="${c}" stroke-width="2"/><line x1="4" y1="-4" x2="4" y2="4" stroke="${c}" stroke-width="2"/><text y="17" font-size="8" text-anchor="middle" fill="${c}" font-weight="800">専</text>`},
+  // 照明
+  ceiling:{cat:'照明',label:'シーリング',color:'#b45309',glyph:c=>`<circle r="11" fill="#fff7e6" stroke="${c}" stroke-width="2"/><line x1="-7.8" y1="-7.8" x2="7.8" y2="7.8" stroke="${c}" stroke-width="1.6"/><line x1="7.8" y1="-7.8" x2="-7.8" y2="7.8" stroke="${c}" stroke-width="1.6"/>`},
+  downlight:{cat:'照明',label:'ダウンライト',color:'#b45309',glyph:c=>`<circle r="10" fill="#fff7e6" stroke="${c}" stroke-width="2"/><circle r="3.4" fill="${c}"/>`},
+  bracket:{cat:'照明',label:'ブラケット',color:'#b45309',glyph:c=>`<path d="M-10 8 L10 8" stroke="${c}" stroke-width="2.4"/><circle cx="0" cy="0" r="7" fill="#fff7e6" stroke="${c}" stroke-width="2"/><line x1="0" y1="0" x2="0" y2="8" stroke="${c}" stroke-width="1.6"/>`},
+  pendant:{cat:'照明',label:'ペンダント',color:'#b45309',glyph:c=>`<line x1="0" y1="-11" x2="0" y2="-2" stroke="${c}" stroke-width="1.6"/><circle cx="0" cy="3" r="7" fill="#fff7e6" stroke="${c}" stroke-width="2"/>`},
+  vent:{cat:'照明',label:'換気扇',color:'#0369a1',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><path d="M0 0 L0 -8 A8 8 0 0 1 7 4 Z" fill="${c}" opacity=".7"/><path d="M0 0 L0 8 A8 8 0 0 1 -7 -4 Z" fill="${c}" opacity=".4"/>`},
+  // スイッチ
+  sw:{cat:'スイッチ',label:'スイッチ',color:'#1f2937',glyph:c=>`<circle r="5.5" fill="${c}"/><line x1="4" y1="-4" x2="12" y2="-12" stroke="${c}" stroke-width="2"/>`},
+  sw3:{cat:'スイッチ',label:'3路SW',color:'#1f2937',glyph:c=>`<circle r="5.5" fill="${c}"/><line x1="4" y1="-4" x2="12" y2="-12" stroke="${c}" stroke-width="2"/><text x="9" y="10" font-size="8" fill="${c}" font-weight="800">3</text>`},
+  swDim:{cat:'スイッチ',label:'調光SW',color:'#1f2937',glyph:c=>`<circle r="5.5" fill="${c}"/><line x1="4" y1="-4" x2="12" y2="-12" stroke="${c}" stroke-width="2"/><text x="9" y="10" font-size="8" fill="${c}" font-weight="800">L</text>`},
+  // 弱電・設備
+  panel:{cat:'設備',label:'分電盤',color:'#c0392b',glyph:c=>`<rect x="-13" y="-9" width="26" height="18" rx="2" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="-13" y1="9" x2="13" y2="-9" stroke="${c}" stroke-width="1.6"/>`},
+  tv:{cat:'設備',label:'TV端子',color:'#0369a1',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><text y="4" font-size="9" text-anchor="middle" fill="${c}" font-weight="800">TV</text>`},
+  lan:{cat:'設備',label:'LAN',color:'#0369a1',glyph:c=>`<rect x="-11" y="-9" width="22" height="18" rx="2" fill="#fff" stroke="${c}" stroke-width="2"/><text y="4" font-size="8" text-anchor="middle" fill="${c}" font-weight="800">LAN</text>`},
+  tel:{cat:'設備',label:'電話',color:'#0369a1',glyph:c=>`<circle r="11" fill="#fff" stroke="${c}" stroke-width="2"/><text y="4" font-size="7" text-anchor="middle" fill="${c}" font-weight="800">TEL</text>`},
+  aircon:{cat:'設備',label:'エアコン',color:'#0f766e',glyph:c=>`<rect x="-13" y="-7" width="26" height="12" rx="4" fill="#fff" stroke="${c}" stroke-width="2"/><line x1="-9" y1="1" x2="9" y2="1" stroke="${c}" stroke-width="1.4"/><text y="14" font-size="7" text-anchor="middle" fill="${c}" font-weight="800">AC</text>`},
+};
+
+let state={rooms:[],items:[],wires:[]};
+let seq=0;
+let pendingType=null;     // パレットで選択中の記号
+let wireModeOn=false, wireFrom=null;
+let selId=null;
+const history=[];
+function snapshot(){history.push(JSON.stringify(state)); if(history.length>40)history.shift();}
+function snap(v){return Math.round(v/10)*10;}
+
+// パレット生成
+(function buildPalette(){
+  const pal=$('#palette'); const cats={};
+  Object.entries(SYMBOLS).forEach(([k,s])=>{(cats[s.cat]=cats[s.cat]||[]).push([k,s]);});
+  Object.entries(cats).forEach(([cat,arr])=>{
+    const h=document.createElement('div'); h.className='palcat'; h.textContent=cat; pal.appendChild(h);
+    arr.forEach(([k,s])=>{
+      const b=document.createElement('div'); b.className='palbtn'; b.dataset.type=k;
+      b.innerHTML=`<svg viewBox="-16 -16 32 40">${s.glyph(s.color)}</svg><span>${s.label}</span>`;
+      b.onclick=()=>{
+        pendingType = pendingType===k?null:k;
+        wireModeOn=false; wireFrom=null; $('#wireMode').classList.remove('on');
+        $$('.palbtn').forEach(x=>x.classList.toggle('on',x.dataset.type===pendingType&&pendingType));
+        toast(pendingType?`「${s.label}」を配置：図面をタップ`:'配置キャンセル');
+      };
+      pal.appendChild(b);
+    });
+  });
+  // 凡例
+  const lg=$('#legend');
+  Object.values(SYMBOLS).forEach(s=>{
+    const d=document.createElement('div'); d.className='li';
+    d.innerHTML=`<svg viewBox="-16 -16 32 32">${s.glyph(s.color)}</svg>${s.label}`; lg.appendChild(d);
+  });
+})();
+
+// 座標変換
+function toSvg(evt){
+  const pt=cv.createSVGPoint(); const t=evt.touches?evt.touches[0]:evt;
+  pt.x=t.clientX; pt.y=t.clientY;
+  return pt.matrixTransform(cv.getScreenCTM().inverse());
+}
+
+function render(){
+  let h='';
+  // 部屋
+  state.rooms.forEach(r=>{
+    const sel=selId===r.id;
+    h+=`<g data-id="${r.id}" data-kind="room">
+      <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#f8fafc" stroke="${sel?'#ff7a00':'#334155'}" stroke-width="${sel?3:2.5}"/>
+      <text x="${r.x+8}" y="${r.y+20}" font-size="15" fill="#334155" font-weight="700">${escapeXml(r.name)}</text>
+      <rect class="rz" data-id="${r.id}" x="${r.x+r.w-11}" y="${r.y+r.h-11}" width="16" height="16" fill="${sel?'#ff7a00':'#94a3b8'}" opacity="0.9"/>
+    </g>`;
+  });
+  // 配線
+  state.wires.forEach(w=>{
+    const a=state.items.find(i=>i.id===w.from), b=state.items.find(i=>i.id===w.to);
+    if(!a||!b) return;
+    const mx=(a.x+b.x)/2, my=Math.min(a.y,b.y)-30;
+    h+=`<path d="M${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}" fill="none" stroke="#c0392b" stroke-width="1.8" stroke-dasharray="5 4"/>`;
+  });
+  // 記号
+  state.items.forEach(it=>{
+    const s=SYMBOLS[it.type]; if(!s) return;
+    const sel=selId===it.id;
+    const sc=it.scale||1;
+    h+=`<g data-id="${it.id}" data-kind="item" transform="translate(${it.x},${it.y}) rotate(${it.rot||0})" style="cursor:move">
+      ${sel?`<circle r="${18*sc}" fill="#ff7a00" opacity="0.15"/>`:''}
+      <g transform="scale(${sc})">${s.glyph(s.color)}</g>
+      <g transform="rotate(${-(it.rot||0)})"><text y="${25*sc}" font-size="10" text-anchor="middle" fill="#334155" font-weight="700">${escapeXml(it.label||'')}</text></g>
+    </g>`;
+  });
+  cv.innerHTML=h;
+}
+function escapeXml(s){return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+
+// ---- 操作：配置・選択・ドラッグ ----
+let drag=null; // {kind,id,dx,dy,resize}
+cv.addEventListener('pointerdown',e=>{
+  const p=toSvg(e);
+  const g=e.target.closest('[data-id]');
+  const rz=e.target.classList.contains('rz');
+
+  // 配置モード
+  if(pendingType && !g){
+    snapshot();
+    state.items.push({id:'it'+(++seq),type:pendingType,x:snap(p.x),y:snap(p.y),rot:0,scale:1,label:SYMBOLS[pendingType].label});
+    selId=null; render(); return;
+  }
+  if(!g){ selId=null; updateSelbar(); render(); return; }
+
+  const id=g.dataset.id;
+  const kind=g.dataset.kind;
+
+  // 配線モード
+  if(wireModeOn && kind==='item'){
+    if(!wireFrom){ wireFrom=id; selId=id; render(); toast('つなぐ相手をタップ'); }
+    else if(wireFrom!==id){
+      snapshot(); state.wires.push({from:wireFrom,to:id}); wireFrom=null; selId=null; render(); toast('配線しました');
+    }
+    return;
+  }
+
+  // 選択＆ドラッグ開始
+  selId=id; updateSelbar();
+  if(kind==='room'){
+    const r=state.rooms.find(x=>x.id===id);
+    if(rz){ drag={kind,id,resize:true}; }
+    else drag={kind,id,dx:p.x-r.x,dy:p.y-r.y};
+  }else{
+    const it=state.items.find(x=>x.id===id);
+    drag={kind,id,dx:p.x-it.x,dy:p.y-it.y};
+  }
+  snapshot();
+  render();
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  const p=toSvg(e);
+  if(drag.kind==='room'){
+    const r=state.rooms.find(x=>x.id===drag.id);
+    if(drag.resize){ r.w=Math.max(60,snap(p.x-r.x)); r.h=Math.max(60,snap(p.y-r.y)); }
+    else { r.x=snap(p.x-drag.dx); r.y=snap(p.y-drag.dy); }
+  }else{
+    const it=state.items.find(x=>x.id===drag.id);
+    it.x=snap(p.x-drag.dx); it.y=snap(p.y-drag.dy);
+  }
+  render();
+});
+cv.addEventListener('pointerup',()=>{drag=null;});
+cv.addEventListener('pointercancel',()=>{drag=null;});
+
+// ---- 選択バー ----
+function updateSelbar(){
+  const bar=$('#selbar');
+  const it=state.items.find(x=>x.id===selId);
+  const rm=state.rooms.find(x=>x.id===selId);
+  if(!it&&!rm){ bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  $('#selName').textContent = it?`選択：${SYMBOLS[it.type].label}${it.label&&it.label!==SYMBOLS[it.type].label?'（'+it.label+'）':''}` : `選択：部屋「${rm.name}」`;
+  $('#selRotate').style.display=it?'':'none';
+  $('#selBigger').style.display=it?'':'none';
+  $('#selSmaller').style.display=it?'':'none';
+}
+$('#selDelete').onclick=()=>{
+  if(!selId) return; snapshot();
+  state.items=state.items.filter(x=>x.id!==selId);
+  state.rooms=state.rooms.filter(x=>x.id!==selId);
+  state.wires=state.wires.filter(w=>w.from!==selId&&w.to!==selId);
+  selId=null; updateSelbar(); render();
+};
+$('#selRotate').onclick=()=>{const it=state.items.find(x=>x.id===selId);if(it){snapshot();it.rot=((it.rot||0)+45)%360;render();}};
+$('#selBigger').onclick=()=>{const it=state.items.find(x=>x.id===selId);if(it){snapshot();it.scale=Math.min(2.5,(it.scale||1)+0.2);render();}};
+$('#selSmaller').onclick=()=>{const it=state.items.find(x=>x.id===selId);if(it){snapshot();it.scale=Math.max(0.6,(it.scale||1)-0.2);render();}};
+$('#selRelabel').onclick=()=>{
+  const it=state.items.find(x=>x.id===selId), rm=state.rooms.find(x=>x.id===selId);
+  const cur=it?it.label:rm.name;
+  const v=prompt('名前を入力',cur); if(v==null) return;
+  snapshot(); if(it) it.label=v; else rm.name=v; updateSelbar(); render();
+};
+
+// ---- ツールバー ----
+$('#addRoomRect').onclick=()=>{
+  snapshot();
+  state.rooms.push({id:'rm'+(++seq),x:60,y:60,w:280,h:200,name:'部屋'});
+  render();
+};
+$('#wireMode').onclick=function(){
+  wireModeOn=!wireModeOn; wireFrom=null; pendingType=null;
+  $$('.palbtn').forEach(x=>x.classList.remove('on'));
+  this.classList.toggle('on',wireModeOn);
+  toast(wireModeOn?'配線モード：スイッチ→照明の順にタップ':'配線モード解除');
+};
+$('#undo').onclick=()=>{
+  if(!history.length){toast('これ以上戻せません');return;}
+  state=JSON.parse(history.pop()); selId=null; updateSelbar(); render();
+};
+$('#clearAll').onclick=()=>{
+  if(!confirm('図面を全部消しますか？')) return;
+  snapshot(); state={rooms:[],items:[],wires:[]}; selId=null; updateSelbar(); render();
+};
+$('#saveJson').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='配線図_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  try{localStorage.setItem('haisen_last',JSON.stringify(state));}catch(e){}
+  toast('保存しました');
+};
+$('#loadJson').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{snapshot();state=JSON.parse(rd.result);selId=null;render();toast('読み込みました');}catch(err){toast('読み込めませんでした');}};
+  rd.readAsText(f); e.target.value='';
+};
+$('#printDraw').onclick=()=>window.print();
+$('#exportPng').onclick=()=>{
+  const clone=cv.cloneNode(true);
+  clone.setAttribute('xmlns',SVGNS);
+  // グリッド背景を白で焼き込む
+  const bg=document.createElementNS(SVGNS,'rect');
+  bg.setAttribute('x',0);bg.setAttribute('y',0);bg.setAttribute('width',1000);bg.setAttribute('height',680);bg.setAttribute('fill','#fff');
+  clone.insertBefore(bg,clone.firstChild);
+  const xml=new XMLSerializer().serializeToString(clone);
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.createElement('canvas'); canvas.width=2000; canvas.height=1360;
+    const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,2000,1360);
+    ctx.drawImage(img,0,0,2000,1360);
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/png');
+    a.download='配線図_'+new Date().toISOString().slice(0,10)+'.png'; a.click(); toast('PNGを保存しました');
+  };
+  img.onerror=()=>toast('画像化に失敗しました');
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(xml)));
+};
+
+// 前回図面の自動復元
+try{const last=localStorage.getItem('haisen_last'); if(last) state=JSON.parse(last);}catch(e){}
+render();
+</script>
+</body>
+</html>
