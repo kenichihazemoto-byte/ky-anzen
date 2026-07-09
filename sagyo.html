@@ -203,6 +203,25 @@
     <button class="btn btn-sub" id="specReset" style="margin-top:8px">↩ 初期値（仮）に戻す</button>
     <div class="note">品番・数値の最終確定は設計図書・協力業者の金物表・メーカー仕様書と照合すること。</div>
   </div>
+
+  <div class="card">
+    <h2 class="sec">📤 この標準仕様を全端末へ配布</h2>
+    <p class="muted">中村さんが1回設定 → 下の<b>配布リンク／QR</b>を職人さんに配る → 各自がリンクを開く（QRを読む）と、その端末に同じ標準仕様が入ります。以後もその端末で自動で使われます。</p>
+    <button class="btn btn-primary" id="specShareBtn">🔗 配布リンク・QRを作成</button>
+    <div id="specShareOut" class="hidden" style="margin-top:12px">
+      <label>配布リンク（LINE・メール・AirDropで送る）</label>
+      <textarea id="specShareUrl" readonly style="min-height:70px;background:#f8fafc;font-size:12.5px"></textarea>
+      <div class="row">
+        <button class="btn btn-ky" id="specShareCopy">📋 リンクをコピー</button>
+        <button class="btn btn-sub" id="specDownload">💾 設定ファイルで保存</button>
+      </div>
+      <div id="specQr" style="text-align:center;margin-top:14px"></div>
+      <div class="muted" style="text-align:center;margin-top:4px">スマホのカメラ／QRリーダーで読み取ると設定が入ります（QR画像の表示はネット接続時）</div>
+    </div>
+    <label style="margin-top:14px">📂 設定ファイル（.json）を読み込む</label>
+    <input type="file" id="specFile" accept="application/json,.json">
+    <div class="note">配布されるのは品番・寸法・ピッチなどの仕様値のみ（個人情報なし）。QR画像の生成にのみ外部のQRサービスを利用します。オフラインで確実に渡すなら「設定ファイルで保存」→ AirDrop/LINE 送付が確実です。</div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -442,6 +461,24 @@ function renderSpecForm(){
   box.querySelectorAll('input[data-sk]').forEach(inp=>inp.oninput=()=>{SPEC[inp.dataset.sk].val=inp.value;saveSpec();});
 }
 $('#specReset').onclick=()=>{if(!confirm('標準仕様を初期値（仮）に戻しますか？')) return;localStorage.removeItem('daiku_spec');SPEC=loadSpec();renderSpecForm();toast('初期値に戻しました');};
+
+/* ---- 標準仕様の配布（リンク／QR／ファイル） ---- */
+function specDiff(){const d={};Object.keys(SPEC_DEFAULT).forEach(k=>{if(SPEC[k]&&SPEC[k].val!==SPEC_DEFAULT[k].val)d[k]=SPEC[k].val;});return d;}
+function encSpec(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function decSpec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0));return JSON.parse(new TextDecoder().decode(bytes));}
+function applySpecImport(map){Object.keys(map).forEach(k=>{if(SPEC[k])SPEC[k].val=map[k];});saveSpec();renderSpecForm();}
+function specShareUrl(){return location.origin+location.pathname+'?spec='+encSpec(specDiff());}
+$('#specShareBtn').onclick=()=>{
+  const url=specShareUrl();$('#specShareUrl').value=url;$('#specShareOut').classList.remove('hidden');
+  const q='https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data='+encodeURIComponent(url);
+  $('#specQr').innerHTML='<img alt="配布QR" style="width:200px;height:200px;border:1px solid var(--line);border-radius:8px;background:#fff" src="'+q+'">';
+  const n=Object.keys(specDiff()).length;toast(n?`変更${n}項目を配布リンク化`:'現在の設定を配布リンク化');
+};
+$('#specShareCopy').onclick=()=>{const t=$('#specShareUrl');t.select();try{document.execCommand('copy');}catch(e){}navigator.clipboard&&navigator.clipboard.writeText(t.value);toast('リンクをコピーしました');};
+$('#specDownload').onclick=()=>{const blob=new Blob([JSON.stringify(SPEC,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='大工標準仕様.json';a.click();toast('設定ファイルを保存しました');};
+$('#specFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const o=JSON.parse(rd.result);const map={};Object.keys(o).forEach(k=>{map[k]=(o[k]&&typeof o[k]==='object'&&'val'in o[k])?o[k].val:o[k];});applySpecImport(map);toast('設定を読み込みました');}catch(err){toast('読み込めませんでした');}};rd.readAsText(f);e.target.value='';};
+/* 起動時：?spec= があれば取り込み → URLから除去（二重適用防止） */
+(function(){try{const p=new URLSearchParams(location.search).get('spec');if(!p)return;applySpecImport(decSpec(p));history.replaceState(null,'',location.pathname);toast('配布された標準仕様を取り込みました');}catch(e){}})();
 
 /* ===== 条件・工程選択 ===== */
 const conds={fireproof:true,enen:true,jio:true};
