@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>朝礼安全・KY活動シート V3.2 | ハゼモト建設</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+    html { scroll-behavior: smooth; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; 
+      padding: 0;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    .container { max-width: 100%; height: 100vh; display: flex; flex-direction: column; background: white; box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1); }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem 1rem; text-align: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+    .header h1 { font-size: 24px; margin-bottom: 4px; font-weight: 700; }
+    .header p { font-size: 12px; opacity: 0.9; }
+    .progress-wrapper { padding: 0.5rem 1rem; background: #f5f5f5; }
+    .progress-bar { width: 100%; height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); width: 0%; transition: width 0.3s ease; }
+    .content { flex: 1; overflow-y: auto; padding: 1rem; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; }
+    .tab-btn { 
+      flex: 1; 
+      padding: 1rem 0.5rem; 
+      background: none; 
+      border: none; 
+      border-bottom: 3px solid transparent;
+      font-size: 13px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      color: #999;
+      transition: all 0.3s;
+    }
+    .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+    .tab-content { display: none; animation: slideIn 0.3s ease-out; }
+    .tab-content.active { display: block; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 0.8rem; color: #333; }
+    .character-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
+    .character-btn { 
+      padding: 1rem; 
+      border: 3px solid #ddd; 
+      border-radius: 12px; 
+      background: white;
+      font-size: 32px; 
+      cursor: pointer; 
+      transition: all 0.2s;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .character-btn:active { transform: scale(0.95); }
+    .character-btn.selected { 
+      border-color: #667eea; 
+      background: #f0f0ff; 
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+    }
+    .character-name { font-size: 11px; font-weight: 600; }
+    
+    select, input[type="date"], input[type="text"], textarea { 
+      width: 100%; 
+      padding: 1rem; 
+      border: 2px solid #ddd; 
+      border-radius: 8px; 
+      font-size: 16px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    select:focus, input:focus, textarea:focus { 
+      outline: none; 
+      border-color: #667eea; 
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    textarea { min-height: 100px; resize: none; }
+    
+    .work-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
+    .work-btn { 
+      padding: 1rem; 
+      background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+      border: 2px solid #ddd; 
+      border-radius: 8px;
+      font-size: 13px; 
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      min-height: 60px;
+    }
+    .work-btn:active { transform: scale(0.95); }
+    .work-btn.selected { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    .work-btn::before { 
+      content: '☐'; 
+      margin-right: 0.5rem; 
+      font-size: 18px;
+    }
+    .work-btn.selected::before { content: '☑'; }
+    
+    .category-label { font-size: 12px; font-weight: 700; color: #667eea; margin-top: 1rem; margin-bottom: 0.5rem; padding: 0.5rem; background: #f5f5ff; border-radius: 4px; }
+    .genre-header { font-size: 14px; font-weight: 700; color: #764ba2; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #764ba2; }
+    
+    .voice-input-btn { 
+      width: 100%; 
+      padding: 1rem; 
+      background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .voice-input-btn:active { transform: scale(0.98); }
+    .voice-input-btn.listening { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); animation: pulse 0.5s infinite; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); } }
+    
+    .button-group { 
+      display: flex; 
+      gap: 1rem; 
+      margin-top: 1.5rem; 
+      padding: 0 1rem 1rem;
+      position: sticky;
+      bottom: 0;
+      background: white;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    }
+    button { 
+      flex: 1; 
+      padding: 1rem; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-primary { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); }
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-secondary:active { transform: scale(0.98); }
+    
+    .points-display { 
+      text-align: center; 
+      padding: 2rem; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .points-value { 
+      font-size: 72px; 
+      font-weight: 700; 
+      margin: 1rem 0;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .points-label { font-size: 18px; font-weight: 600; }
+    .rating-badge { 
+      display: inline-block;
+      font-size: 28px;
+      margin-top: 1rem;
+    }
+    
+    .badges-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin: 1.5rem 0; }
+    .badge { 
+      padding: 1rem; 
+      border-radius: 8px; 
+      text-align: center; 
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .badge.earned { background: #fff3cd; border: 2px solid #ffc107; }
+    .badge.notearned { background: #f5f5f5; border: 2px dashed #ccc; opacity: 0.6; }
+    
+    .ky-sheet { 
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 1rem;
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .ranking-card { 
+      padding: 1.5rem; 
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      border-radius: 8px; 
+      margin-bottom: 1rem;
+      border: 2px solid #ddd;
+    }
+    .ranking-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 1rem; 
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      background: white;
+      border-radius: 6px;
+    }
+    .ranking-medal { font-size: 24px; min-width: 30px; text-align: center; }
+    .ranking-name { flex: 1; font-weight: 600; }
+    .ranking-points { font-size: 18px; font-weight: 700; color: #667eea; }
+    
+    #particleCanvas { position: fixed; top: 0; left: 0; pointer-events: none; }
+    
+    .weather-display { 
+      background: #f5f5f5;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: space-around;
+      font-size: 13px;
+    }
+    .weather-item { text-align: center; }
+    .weather-item-value { font-size: 18px; font-weight: 700; color: #667eea; }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  </style>
+</head>
+<body>
+  <canvas id="particleCanvas"></canvas>
+  
+  <!-- 安全標語スプラッシュ画面 -->
+  <div id="safetyMottoBg" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.7); z-index: 9999; animation: fadeIn 0.5s ease-out;"></div>
+  <div id="safetyMottoContainer" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background: white; border-radius: 16px; padding: 3rem 2rem; text-align: center; z-index: 10000; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
+    <div style="font-size: 48px; margin-bottom: 1.5rem;">🏗️</div>
+    <h2 style="color: #667eea; font-size: 16px; margin-bottom: 1.5rem; font-weight: 700;">本日の安全標語</h2>
+    <div id="mottoText" style="font-size: 20px; font-weight: 700; color: #333; line-height: 1.6; margin-bottom: 2rem; min-height: 80px; display: flex; align-items: center; justify-content: center;"></div>
+    <div style="font-size: 28px; margin-bottom: 1.5rem;">✨</div>
+    <button onclick="closeSafetyMotto()" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;">準備完了 → 本日の作業へ</button>
+  </div>
+  
+  <div class="container">
+    <div class="header">
+      <h1>🏗️ 朝礼安全・KY活動シート V3.2</h1>
+      <p>工事種別＆ジャンル別 スマート入力版</p>
+    </div>
+    
+    <div class="progress-wrapper">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+    
+    <div class="content" id="mainContent">
+      <!-- TAB 1: 基本情報 -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(0)">1️⃣ 基本情報</button>
+        <button class="tab-btn" onclick="switchTab(1)">2️⃣ 作業内容</button>
+        <button class="tab-btn" onclick="switchTab(2)">3️⃣ 詳細入力</button>
+        <button class="tab-btn" onclick="switchTab(3)">4️⃣ 確認</button>
+      </div>
+      
+      <div class="tab-content active" id="tab0">
+        <div class="form-group">
+          <label for="date">📅 日付</label>
+          <input type="date" id="date">
+        </div>
+        
+        <div class="form-group">
+          <label>👤 リーダーを選んでね！</label>
+          <div class="character-selector">
+            <button class="character-btn" onclick="selectLeader('ビン', '🟠')">🟠<div class="character-name">ビン</div></button>
+            <button class="character-btn" onclick="selectLeader('ドン', '🟡')">🟡<div class="character-name">ドン</div></button>
+            <button class="character-btn" onclick="selectLeader('永井', '🟢')">🟢<div class="character-name">永井</div></button>
+            <button class="character-btn" onclick="selectLeader('山口', '🔵')">🔵<div class="character-name">山口</div></button>
+            <button class="character-btn" onclick="selectLeader('江口', '🟣')">🟣<div class="character-name">江口</div></button>
+            <button class="character-btn" onclick="selectLeader('アンディ', '🟤')">🟤<div class="character-name">アンディ</div></button>
+            <button class="character-btn" onclick="selectLeader('リフキ', '⚫')">⚫<div class="character-name">リフキ</div></button>
+            <button class="character-btn" onclick="selectLeader('イクノ', '❤️')">❤️<div class="character-name">イクノ</div></button>
+            <button class="character-btn" onclick="selectLeader('トーヨーテック', '⚪')" style="border: 3px dashed #ccc;">⚪<div class="character-name">トー</div></button>
+            <button class="character-btn" onclick="selectLeader('ミロク', '🩶')">🩶<div class="character-name">ミロク</div></button>
+          </div>
+          <input type="hidden" id="leader">
+        </div>
+        
+        <div class="form-group">
+          <label for="projecttype">🏗️ 工事種別</label>
+          <select id="projecttype" onchange="updateProjectType(); playSound('select');">
+            <option value="">-- 選んでね --</option>
+            <option value="new">新築工事</option>
+            <option value="public">公社工事</option>
+            <option value="ob">OB客</option>
+            <option value="tenant">テナント工事</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="genreFormGroup" style="display: none; padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+          <label for="genre" style="color: #856404; font-weight: 700; font-size: 15px;">📂 工事ジャンルを選んでね！</label>
+          <select id="genre" onchange="selectedGenre = this.value; updateFacilities(); renderWorkTypes(); playSound('select'); updateProgress();">
+            <option value="">-- 工事ジャンルを選んでください --</option>
+          </select>
+          <div style="font-size: 12px; color: #666; margin-top: 0.5rem;">💡 工事種別に応じたジャンルが表示されます</div>
+        </div>
+        
+        <div class="form-group" id="facilityFormGroup">
+          <label for="facilitySelect">📍 現場名</label>
+          <select id="facilitySelect" onchange="updateCustomFacility(); playSound('select');">
+            <option value="">-- 選んでね --</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <input type="text" id="facilityCustom" placeholder="現場名を入力（セレクトから選ぶか、ここに入力）">
+        </div>
+      </div>
+      
+      <!-- TAB 2: 作業内容 -->
+      <div class="tab-content" id="tab1">
+        <div class="weather-display">
+          <div class="weather-item">
+            <div style="font-size: 24px; margin-bottom: 0.5rem;">🌡️</div>
+            <div>気温</div>
+            <div class="weather-item-value" id="tempDisplay">取得中</div>
+          </div>
+          <div class="weather-item">
+            <div style="font-size: 24px; margin-bottom: 0.5rem;" id="weatherEmoji">☀️</div>
+            <div>天候</div>
+            <div class="weather-item-value" id="weatherDisplay">取得中</div>
+          </div>
+          <div class="weather-item">
+            <div style="font-size: 24px; margin-bottom: 0.5rem;" id="heatstrokeEmoji">🟢</div>
+            <div>熱中症</div>
+            <div class="weather-item-value" id="heatstrokeLevel">判定中</div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>🛠️ 本日の作業内容（工事種別に応じて表示）</label>
+          <div id="workTypesContainer"></div>
+        </div>
+      </div>
+      
+      <!-- TAB 3: 詳細入力 -->
+      <div class="tab-content" id="tab2">
+        <div class="form-group">
+          <label>🎤 作業詳細（音声入力または手入力）</label>
+          <button class="voice-input-btn" id="voiceBtn" onclick="startVoiceInput()">
+            🎙️ 音声入力で説明
+          </button>
+          <textarea id="workDetail" placeholder="例：基礎工事で根伐りと生コン打設を実施。気温が高いため安全帯着用して作業を実施。"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="toolsUsed">🔧 使用した道具・重機</label>
+          <input type="text" id="toolsUsed" placeholder="例：ノコギリ、ハンマー、インパクトドライバー、バックホー">
+        </div>
+      </div>
+      
+      <!-- TAB 4: 確認 -->
+      <div class="tab-content" id="tab3">
+        <div class="form-group">
+          <label>📋 入力内容の確認</label>
+          <div style="background: #f5f5f5; padding: 1.5rem; border-radius: 8px; font-size: 14px; line-height: 1.8;">
+            <div><strong>日付：</strong> <span id="confirmDate">-</span></div>
+            <div><strong>リーダー：</strong> <span id="confirmLeader">-</span></div>
+            <div><strong>工事種別：</strong> <span id="confirmProject">-</span></div>
+            <div><strong>工事ジャンル：</strong> <span id="confirmGenre">-</span></div>
+            <div><strong>現場名：</strong> <span id="confirmFacility">-</span></div>
+            <div><strong>作業内容：</strong> <span id="confirmWork">-</span></div>
+            <div><strong>作業詳細：</strong> <span id="confirmDetail">-</span></div>
+            <div><strong>気温：</strong> <span id="confirmTemp">-</span></div>
+            <div><strong>天候：</strong> <span id="confirmWeather">-</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="button-group" id="buttonGroup">
+      <button class="btn-secondary" onclick="previousTab()">◀️ 戻る</button>
+      <button class="btn-primary" onclick="nextTab()">進む ▶️</button>
+    </div>
+  </div>
+  
+  <!-- 結果表示 -->
+  <div id="resultContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: white; overflow-y: auto; padding: 1rem; z-index: 1000;">
+    <div class="header" style="position: sticky; top: 0; z-index: 10; margin: -1rem -1rem 1rem -1rem;">
+      <h1>🎉 KY活動シート完成！</h1>
+    </div>
+    
+    <div class="points-display" id="pointsDisplay">
+      <div class="points-label">本日のポイント</div>
+      <div class="points-value" id="pointsValue">0</div>
+      <div class="rating-badge" id="ratingBadge">🟡</div>
+    </div>
+    
+    <div class="badges-container" id="badgesContainer"></div>
+    
+    <div class="ky-sheet" id="kySheet" style="white-space: pre-wrap; margin: 1rem 0;"></div>
+    
+    <div class="ranking-card">
+      <h3 style="margin-bottom: 1rem;">🏆 今月のランキング TOP 3</h3>
+      <div id="rankingDisplay"></div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-bottom: 2rem;">
+      <button class="btn-primary" onclick="printSheet()" style="flex: 1;">🖨️ 印刷</button>
+      <button class="btn-secondary" onclick="newEntry()" style="flex: 1;">📝 新規入力</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const characters = {
+      'ビン': { emoji: '🟠' },
+      'ドン': { emoji: '🟡' },
+      '永井': { emoji: '🟢' },
+      '山口': { emoji: '🔵' },
+      '江口': { emoji: '🟣' },
+      'アンディ': { emoji: '🟤' },
+      'リフキ': { emoji: '⚫' },
+      'イクノ': { emoji: '❤️' },
+      'トーヨーテック': { emoji: '⚪' },
+      'ミロク': { emoji: '🩶' }
+    };
+    
+    // ===== 工事種別ごとの構造（新築工事は10ジャンルに分割）=====
+    const workTypesByProject = {
+      new: [
+        {
+          genre: '解体工事',
+          works: ['屋根瓦解体', '壁床解体', '躯体解体', '柱梁解体', '基礎・擁壁破砕', '石綿（アスベスト）除去', '既存建材搬出']
+        },
+        {
+          genre: '基礎工事',
+          works: ['地盤調査', '遣り方・墨出し', '根伐り（根切り）', '砂利敷き', '捨てコンクリート', '型枠設置', '鉄筋配筋', '生コン打設', '型枠脱型', '防水・防湿シート張']
+        },
+        {
+          genre: '大工工事',
+          works: ['仮設足場組立', '柱立て', '梁・桁組', '床張り', '小屋組', '階段工事', '野地板張', 'ボード張り', '建具枠取付', '天井ボード貼', '巾木取付', '腰壁貼', '棚取付', 'カウンター取付', '造作家具組立', 'クローゼット枠組']
+        },
+        {
+          genre: '屋根工事',
+          works: ['野地板張', '通気層設置', 'アンダーレイ・防水シート張', '瓦葺き', 'スレート葺き', '金属板葺き', '瓦の漆喰補修', '棟の取付', '隅棟の施工', '雨樋取付', '軒天井張', '水切りガード取付', '屋根板金補修']
+        },
+        {
+          genre: '外壁工事',
+          works: ['防水・透湿シート張', '下地胴縁設置', 'サイディング貼り', 'タイル貼り', '外壁塗装', 'シーリング施工', '樋・雨水器具取付', '外壁パネル取付', 'ALC版貼り', '通気胴縁調整', 'コーキング補修', '飾り部材取付']
+        },
+        {
+          genre: '建具工事',
+          works: ['窓・サッシ取付', 'ドア・建具取付', '防火シャッター取付', '雨戸取付', '内部建具取付', 'サッシ調整', '枠組み・シーリング', '装飾パネル取付', 'ガラス施工', 'スイング機構調整']
+        },
+        {
+          genre: '内装工事',
+          works: ['壁・天井ボード張', 'クロス張り', '床張り（フローリング・タイル）', '建具枠取付', '巾木取付', '額縁・モール取付', '天井ボード貼', 'クローゼット枠組', 'カウンター取付', 'キッチン取付', '洗面台設置', '照明枠・配線', 'コンセント枠取付', '窓枠補修', 'スイッチプレート取付']
+        },
+        {
+          genre: '設備工事',
+          works: ['電気配線', 'コンセント取付', '照明配線', 'スイッチ取付', '給排水配管', '給水・井戸接続', 'ガス配管', 'ガス機器接続', '冷暖房・換気設置', 'エアコン室内外機取付', '換気口取付', 'ダクト配管', 'アンテナ取付', '火災報知器取付', '太陽光パネル取付']
+        },
+        {
+          genre: '左官・塗装工事',
+          works: ['左官下地', '塗壁仕上げ', '外壁塗装', '内壁塗装', '木部塗装', '鉄部塗装', 'シーリング', 'パテ埋め', '研磨・下地処理', '防水塗装', '特殊塗装（光触媒など）']
+        },
+        {
+          genre: '外構工事',
+          works: ['塀・フェンス工事', '門扉取付', '駐車場舗装（アスファルト・コンクリート）', '外階段・アプローチ', '給水・ガス引込', '植栽', '照明柱取付', '防犯カメラ取付', '表札・看板取付', 'インターロッキング舗装', '砂利敷き', '側溝・排水溝施工', 'ピンコロ設置', 'すき取り・整地', '砕石地業', '真砂土・バラス整地', '生コン打設', '伸縮目地入']
+        }
+      ],
+      public: [
+        {
+          genre: '清掃・草木',
+          works: ['草刈', '樹木伐採', '樹木剪定', '落ち葉清掃', '側溝清掃', '竹林整備']
+        },
+        {
+          genre: '床・シート',
+          works: ['床張替', 'CFシート貼', 'タイル貼替', 'クッションフロア貼替', 'フローリング張替', 'モップがけ・ワックス']
+        },
+        {
+          genre: '壁・天井',
+          works: ['壁パネル貼', '壁ボード貼', '天井ボード貼', 'クロス張替', '壁塗装補修', '天井配線補修']
+        },
+        {
+          genre: '外部・防水',
+          works: ['樋是正', '雨漏対策', '防水シート張', 'コーキング施工', 'バルコニー防水', 'ドレン清掃', '防水テープ補修']
+        },
+        {
+          genre: '運搬・処分',
+          works: ['既存建材搬出', '廃材・不用品処分', '残土処分', '産業廃棄物分別']
+        },
+        {
+          genre: '調査・点検',
+          works: ['劣化状況診断', '見積調査・仕様確認', '建物状況調査', '床下点検', '屋根裏点検', '給排水点検', '配線点検', '断熱材確認']
+        },
+        {
+          genre: 'その他',
+          works: ['駐車場整備']
+        }
+      ],
+      ob: [
+        {
+          genre: '屋根・外壁',
+          works: ['屋根修理', '外壁修理']
+        },
+        {
+          genre: '床・内装',
+          works: ['床張替', '壁補修', 'クロス張替']
+        },
+        {
+          genre: '建具・水回り',
+          works: ['建具修理', '水回り修理']
+        }
+      ],
+      tenant: [
+        {
+          genre: '構造・枠組',
+          works: ['間仕切り壁', '床張替']
+        },
+        {
+          genre: '内装',
+          works: ['壁ボード貼', 'クロス張替', '建具取付']
+        },
+        {
+          genre: '配線・照明',
+          works: ['照明配線', 'コンセント取付']
+        }
+      ],
+      other: [
+        {
+          genre: 'その他',
+          works: ['カスタム入力']
+        }
+      ]
+    };
+    
+    const facilityMap = {
+      new: ['安部様邸', '有銘様邸', '辻浩之様邸', '武谷様邸'],
+      public: ['到津団地', '日豊団地', '沼団地', '向山団地'],
+      ob: [], tenant: [], other: []
+    };
+    
+    // ===== KY対策データベース（大幅拡充）=====
+    const kyDatabase = {
+      // 解体工事
+      '屋根瓦解体': { 重点: ['① 屋根上での転落防止・安全帯着用', '② 瓦の破片による切傷・刺傷防止', '③ 下地の不安定性に注意'], 現場の注意: '・屋根作業は安全帯を必須着用\n・破片処理を適切に実施' },
+      '壁床解体': { 重点: ['① 粉じん・埃対策・マスク着用', '② 既存構造の不安定性確認', '③ 工具使用時の安全確保'], 現場の注意: '・粉じん対策を強化・換気確保\n・既存建物の弱い箇所に注意' },
+      '躯体解体': { 重点: ['① 建機操作の安全距離確保', '② 落下物防止・周囲への警告', '③ 粉じん・振動への対策'], 現場の注意: '・建機周辺への立入禁止\n・周辺建物への被害防止' },
+      '柱梁解体': { 重点: ['① 高所での不安定性に注意', '② 部材の落下防止', '③ 周囲への危険領域明示'], 現場の注意: '・落下防止ネットの配置\n・周囲への声掛けを徹底' },
+      '基礎・擁壁破砕': { 重点: ['① 破砕機械の正しい操作', '② 周辺への振動・騒音対策', '③ 粉じん・破片対策'], 現場の注意: '・機械周辺への立入禁止\n・保護具の着用を徹底' },
+      '石綿（アスベスト）除去': { 重点: ['① 特別教育・認定者による作業', '② 隔離・密閉の確保', '③ 健康管理・医学診断'], 現場の注意: '・石綿処理は認定業者のみ\n・記録管理を徹底' },
+      '既存建材搬出': { 重点: ['① 腰痛防止・正しい持ち方', '② 転倒・転落防止', '③ 運搬経路の安全確認'], 現場の注意: '・重い部材は複数人で対応\n・既住者への配慮' },
+      
+      // 基礎工事
+      '地盤調査': { 重点: ['① 既存地盤の不安定性', '② 試掘時の転倒・転落防止', '③ 掘削作業の安全確認'], 現場の注意: '・試掘穴は転倒防止柵設置\n・地盤状況を事前確認' },
+      '遣り方・墨出し': { 重点: ['① 脚立・足場からの転落防止', '② 測定機器の適正使用', '③ 現場での落下物防止'], 現場の注意: '・脚立は安定した場所に配置\n・測定機器の固定確認' },
+      '根伐り（根切り）': { 重点: ['① 建機操作の安全距離確保', '② 擁壁・既存構造の不安定性', '③ 足元の転倒・転落防止'], 現場の注意: '・建機周辺への立入禁止\n・擁壁崩壊防止対策' },
+      '砂利敷き': { 重点: ['① 砂利の堆積による転倒防止', '② 運搬機械の安全操作', '③ 粉じん対策・水撒き'], 現場の注意: '・砂利面の凹凸確認\n・機械周辺への立入禁止' },
+      '捨てコンクリート': { 重点: ['① 生コン受け入れ時の確認', '② 振動機の接触防止', '③ 熱中症対策・給水'], 現場の注意: '・受け入れ時に量を確認\n・振動機・型枠の接触防止' },
+      '型枠設置': { 重点: ['① 型枠の転倒・落下防止', '② 釘・金具による切傷防止', '③ 足場の安定確保'], 現場の注意: '・型枠転倒防止支え木配置\n・釘は抜くか曲げて処理' },
+      '鉄筋配筋': { 重点: ['① 鉄筋の切傷・刺傷防止', '② 結束線の飛び出し対策', '③ 足元の転倒・スリップ防止'], 現場の注意: '・切った鉄筋の端処理\n・施工面の整理整頓（4S）' },
+      '生コン打設': { 重点: ['① 生コン受け入れ時の確認', '② 足元の転倒・転落防止（段差・液体）', '③ 熱中症対策・定期休憩'], 現場の注意: '・受け入れ時に生コン量確認\n・振動機・型枠の接触防止' },
+      '型枠脱型': { 重点: ['① 型枠の転倒・落下防止', '② 釘・金具による切傷防止', '③ 脱型時のコンクリート落下'], 現場の注意: '・脱型順序を事前確認\n・不安定な部材に注意' },
+      '防水・防湿シート張': { 重点: ['① シート張り時の巻き込み防止', '② 高所作業の転落防止', '③ 風対策・飛散防止'], 現場の注意: '・複数人で協力して張り込み\n・強風時は作業中止を検討' },
+      
+      // 大工工事
+      '仮設足場組立': { 重点: ['① 足場の安定性確認', '② 転倒・転落防止柵設置', '③ 高所作業の安全帯着用'], 現場の注意: '・足場完成検査を実施\n・安全柵・手摺の確認' },
+      '柱立て': { 重点: ['① 柱の転倒防止・仮支え木設置', '② 高所作業の安全帯着用', '③ 柱材の落下防止'], 現場の注意: '・柱立てクレーン操作の安全確認\n・立て面での転倒防止' },
+      '梁・桁組': { 重点: ['① 梁材の落下防止', '② 高所作業の安全確保', '③ 複数人での協力・声掛け'], 現場の注意: '・梁材吊上げの合図確認\n・立て面での安全確保' },
+      '床張り': { 重点: ['① フローリング運搬時の腰痛防止', '② 釘・ビスの刺傷防止', '③ 段差・転倒防止'], 現場の注意: '・材料は複数人で運搬\n・釘は抜くか曲げて処理' },
+      '小屋組': { 重点: ['① 高所作業の転落防止・安全帯', '② 釘・工具の落下防止', '③ 梁上でのバランス確保'], 現場の注意: '・小屋組作業は安全帯必須\n・工具は腰袋に入れて携行' },
+      '階段工事': { 重点: ['① 段差への転落・転倒防止', '② 工具・部材による打傷防止', '③ 足場の安定性確認'], 現場の注意: '・階段施工中は通路確保\n・未完成段への立入禁止表示' },
+      '野地板張': { 重点: ['① 高所作業の転落防止', '② 屋根上での滑り防止', '③ 工具・部材の落下防止'], 現場の注意: '・屋根作業は安全帯必須着用\n・雨天時は滑り防止強化' },
+      'ボード張り': { 重点: ['① ボードの落下防止・搬入安全', '② ビス・工具の刺傷防止', '③ 足場・脚立の安定確保'], 現場の注意: '・ボード搬入は複数人で対応\n・脚立は安定した場所に配置' },
+      '建具枠取付': { 重点: ['① 建具枠の落下防止', '② 工具・ビスの刺傷防止', '③ 枠の巻き込み防止'], 現場の注意: '・枠は立てかけて保管・転倒防止\n・搬入・施工時に複数人で対応' },
+      
+      // 屋根工事
+      '野地板張': { 重点: ['① 高所作業の転落防止', '② 屋根上での滑り防止', '③ 工具・部材の落下防止'], 現場の注意: '・屋根作業は安全帯必須\n・雨天時は作業中止を検討' },
+      '通気層設置': { 重点: ['① 高所作業の転落防止', '② 部材の落下防止', '③ 足場の安定確保'], 現場の注意: '・高所作業は脚立を安定させる\n・周囲への落下物防止' },
+      'アンダーレイ・防水シート張': { 重点: ['① 高所作業の転落防止', '② シート張り時の巻き込み防止', '③ 風対策・飛散防止'], 現場の注意: '・強風時は作業中止\n・複数人で協力して張り込み' },
+      '瓦葺き': { 重点: ['① 屋根上での転落防止・安全帯', '② 瓦の落下防止', '③ 屋根面の安定性確認'], 現場の注意: '・屋根作業は安全帯必須\n・瓦の固定をしっかり施工' },
+      'スレート葺き': { 重点: ['① 屋根上での転落防止', '② スレート材の落下防止', '③ 足場の安定確保'], 現場の注意: '・屋根作業は安全帯必須\n・スレート固定の確認' },
+      '金属板葺き': { 重点: ['① 屋根上での転落防止', '② 金属板の落下防止', '③ 金属板による切傷防止'], 現場の注意: '・屋根作業は安全帯必須\n・金属板の端処理を実施' },
+      '雨樋取付': { 重点: ['① 高所作業の転落防止', '② 樋の落下防止', '③ 脚立の安定確保'], 現場の注意: '・脚立は水平・安定確認\n・複数人で樋を支持' },
+      '軒天井張': { 重点: ['① 高所作業の転落防止', '② 天井板の落下防止', '③ 脚立・足場の安定確保'], 現場の注意: '・脚立は安定した場所に配置\n・複数人で天井板を支持' },
+      
+      // 外壁工事
+      '防水・透湿シート張': { 重点: ['① 高所作業の転落防止', '② シート張り時の巻き込み防止', '③ 風対策・飛散防止'], 現場の注意: '・脚立は水平・安定確認\n・強風時は作業中止を検討' },
+      '下地胴縁設置': { 重点: ['① 高所作業の転落防止', '② 部材の落下防止', '③ 足場の安定確保'], 現場の注意: '・高所作業は脚立を安定させる\n・周囲への落下物防止' },
+      'サイディング貼り': { 重点: ['① 高所作業の転落防止', '② サイディング落下防止', '③ 足場・脚立の安定確保'], 現場の注意: '・足場は十分な幅と柵確認\n・サイディング固定をしっかり施工' },
+      'タイル貼り': { 重点: ['① 高所作業の転落防止', '② タイルの落下防止', '③ 接着剤の健康被害防止'], 現場の注意: '・足場は安全柵を確認\n・接着剤の換気を確保' },
+      '塗装': { 重点: ['① 高所作業の転落防止', '② 塗料・シンナーの有機溶剤対策', '③ 脚立・足場の安定確保'], 現場の注意: '・塗料の換気を常時実施\n・脚立は安定した場所に配置' },
+      'シーリング': { 重点: ['① 脚立・足場からの転落防止', '② シーリング剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・シーリング剤の換気確保\n・手袋・マスク・保護めがねを着用' },
+      '樋・雨水器具取付': { 重点: ['① 高所作業の転落防止', '② 樋の落下防止', '③ 脚立の安定確保'], 現場の注意: '・脚立は水平・安定確認\n・複数人で樋を支持' },
+      
+      // 建具工事
+      '窓・サッシ取付': { 重点: ['① 高所作業の転落防止', '② 重いサッシの落下防止', '③ 開口部の転落防止'], 現場の注意: '・サッシ搬入時は複数人で対応\n・開口部の転落防止柵設置' },
+      'ドア・建具取付': { 重点: ['① 建具の落下防止', '② 工具・ビスの刺傷防止', '③ 建具の巻き込み防止'], 現場の注意: '・建具は立てかけて保管・転倒防止\n・搬入・施工時に複数人で対応' },
+      '防火シャッター取付': { 重点: ['① 機械・電動部分への巻き込み防止', '② 重いシャッターの落下防止', '③ 周囲への安全確保'], 現場の注意: '・シャッター周辺への立入禁止\n・動作確認時に周囲を確認' },
+      '雨戸取付': { 重点: ['① 高所作業の転落防止', '② 雨戸の落下防止', '③ 脚立の安定確保'], 現場の注意: '・脚立は水平・安定確認\n・複数人で雨戸を支持' },
+      
+      // 内装工事
+      '壁・天井ボード張': { 重点: ['① ボードの落下防止', '② ビス・工具の刺傷防止', '③ 脚立・足場の安定確保'], 現場の注意: '・ボード搬入は複数人で対応\n・脚立は安定した場所に配置' },
+      'クロス張り': { 重点: ['① 脚立・足場からの転落防止', '② 接着剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・接着剤の換気を確保\n・脚立は安定した場所に配置' },
+      '床張り（フローリング・タイル）': { 重点: ['① フローリング搬入時の腰痛防止', '② 釘・ビスの刺傷防止', '③ 段差・転倒防止'], 現場の注意: '・フローリングは複数人で運搬\n・釘は抜くか曲げて処理' },
+      '建具枠取付': { 重点: ['① 建具枠の落下防止', '② 工具・ビスの刺傷防止', '③ 枠の巻き込み防止'], 現場の注意: '・枠は立てかけて保管・転倒防止\n・搬入・施工時に複数人で対応' },
+      '巾木取付': { 重点: ['① 工具・ビスの刺傷防止', '② 脚立の転倒防止', '③ 床面の整理整頓'], 現場の注意: '・脚立は水平・安定確認\n・床面の障害物を除去' },
+      '額縁・モール取付': { 重点: ['① 脚立・足場からの転落防止', '② 額縁の落下防止', '③ 工具・ビスの刺傷防止'], 現場の注意: '・脚立は安定した場所に配置\n・額縁固定がしっかりするまで支持' },
+      
+      // 設備工事
+      '電気配線': { 重点: ['① 感電防止・電源確認', '② 脚立・高所作業の安全確保', '③ 配線・ケーブルの火災防止'], 現場の注意: '・電源は必ず確認・安全確保\n・高所作業は脚立を安定させる' },
+      'コンセント取付': { 重点: ['① 感電防止・電源確認', '② 工具使用時の安全確保', '③ 脚立の転倒防止'], 現場の注意: '・電源は必ず確認\n・脚立は水平・安定確認' },
+      '給排水配管': { 重点: ['① 配管接続時の水漏れ防止', '② 工具使用時の安全確保', '③ 既存配管への破損防止'], 現場の注意: '・配管接続をしっかり確認\n・既存配管の位置を確認' },
+      'ガス配管': { 重点: ['① ガス漏洩防止・厳格な検査', '② 認定工事人による施工', '③ 法規確認・確認申請'], 現場の注意: '・ガス配管は認定工事人のみ\n・工事完了検査を実施' },
+      '冷暖房・換気設置': { 重点: ['① 感電防止・電源確認', '② 高所作業の安全確保', '③ 部材の落下防止'], 現場の注意: '・電源は必ず確認\n・高所作業は安全帯を着用' },
+      
+      // 左官・塗装工事
+      '左官下地': { 重点: ['① 高所作業の転落防止', '② 左官材による健康被害', '③ 脚立・足場の安定確保'], 現場の注意: '・脚立は安定した場所に配置\n・換気を常時実施' },
+      '塗壁仕上げ': { 重点: ['① 高所作業の転落防止', '② 左官材による健康被害', '③ 脚立・足場の安定確保'], 現場の注意: '・脚立は安定した場所に配置\n・換気を常時実施' },
+      '外壁塗装': { 重点: ['① 高所作業の転落防止', '② 塗料・シンナーの有機溶剤対策', '③ 足場・脚立の安定確保'], 現場の注意: '・塗料の換気を常時実施\n・足場は十分な幅と柵確認' },
+      '内壁塗装': { 重点: ['① 脚立・足場からの転落防止', '② 塗料・シンナーの有機溶剤対策', '③ 換気・保護具の着用'], 現場の注意: '・塗料の換気を常時実施\n・脚立は安定した場所に配置' },
+      '木部塗装': { 重点: ['① 脚立からの転落防止', '② 塗料による健康被害', '③ 引火・爆発防止'], 現場の注意: '・塗料の換気を確保\n・脚立は安定した場所に配置' },
+      
+      // 外構工事
+      '塀・フェンス工事': { 重点: ['① 高所作業の転落防止', '② 部材の落下防止', '③ 足場・脚立の安定確保'], 現場の注意: '・足場は十分な幅と柵確認\n・部材固定をしっかり施工' },
+      '門扉取付': { 重点: ['① 門扉の落下防止', '② 工具・ビスの刺傷防止', '③ 門扉の巻き込み防止'], 現場の注意: '・門扉搬入時は複数人で対応\n・動作確認時に周囲を確認' },
+      '駐車場舗装（アスファルト・コンクリート）': { 重点: ['① アスファルト舗装時の熱・煙対策', '② 建機操作の安全距離確保', '③ 熱中症対策・給水'], 現場の注意: '・舗装時は周辺への立入禁止\n・建機の距離を十分確保' },
+      '外階段・アプローチ': { 重点: ['① 段差への転落・転倒防止', '② 工具・部材による打傷防止', '③ 足場の安定性確認'], 現場の注意: '・未完成段への立入禁止表示\n・通路確保・照明確保' },
+      '給水・ガス引込': { 重点: ['① 掘削作業の安全確保', '② 既存配管・電線との接触防止', '③ 給水・ガスの接続安全'], 現場の注意: '・既存埋設物の位置確認\n・建機周辺への立入禁止' },
+      '植栽': { 重点: ['① 脚立からの転落防止', '② 樹木の転倒防止', '③ 道具使用時の安全確保'], 現場の注意: '・脚立は安定した場所に配置\n・樹木固定をしっかり施工' },
+      
+      // 公社工事
+      '草刈': { 重点: ['① 刈払機の正しい使用・保護具着用', '② 周囲への危険領域の明示', '③ 虫刺され・皮膚損傷防止'], 現場の注意: '・刈払機使用者は認定者のみ\n・保護具の着用を徹底' },
+      '樹木伐採': { 重点: ['① チェーンソーの正しい使用', '② 伐木方向の確認', '③ 落下枝・根元の不安定性'], 現場の注意: '・チェーンソー使用者は認定者のみ\n・周囲の安全確認を徹底' },
+      '床張替': { 重点: ['① 既存床材搬出時の腰痛防止', '② 段差・転倒防止', '③ 接着剤・工具による刺傷防止'], 現場の注意: '・古床材搬出は複数人で対応\n・既住者への安全配慮' },
+      'CFシート貼': { 重点: ['① 既存床材との段差・転倒防止', '② 接着剤による健康被害', '③ 工具使用時の安全確保'], 現場の注意: '・接着剤の取扱いに注意\n・既住者への気配り実施' },
+      '壁パネル貼': { 重点: ['① パネルの落下防止', '② 脚立・足場の安定確保', '③ 接着剤による健康被害'], 現場の注意: '・パネル搬入は複数人で対応\n・接着剤の換気を確保' },
+      '壁ボード貼': { 重点: ['① ボードの落下防止', '② ビス・工具の刺傷防止', '③ 脚立・足場の安定確保'], 現場の注意: '・ボード搬入は複数人で対応\n・既住者への配慮' },
+      '天井ボード貼': { 重点: ['① 高所作業の転落防止', '② 天井板の落下防止', '③ 工具・部材の落下防止'], 現場の注意: '・脚立は安定した場所に配置\n・複数人で天井板を支持' },
+      '樋是正': { 重点: ['① 高所作業の転落防止', '② 樋の不安定性・固定状況の確認', '③ 既住者への配慮'], 現場の注意: '・高所作業は安全帯を着用\n・既住者に事前通知' },
+      '雨漏対策': { 重点: ['① 屋根・壁面での高所作業', '② 既存建物の不安定性', '③ 既住者への配慮'], 現場の注意: '・屋根作業は安全帯必須\n・劣化箇所を慎重に扱う' },
+      'コーキング': { 重点: ['① 脚立からの転落防止', '② 化学薬品による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・コーキング剤の換視を確保\n・保護具の着用を徹底' },
+      '既存建材搬出': { 重点: ['① 腰痛防止・正しい持ち方', '② 転倒・転落防止', '③ 運搬経路の安全確認'], 現場の注意: '・重い部材は複数人で対応\n・既住者への配慮' },
+      '廃材・不用品処分': { 重点: ['① 廃材の堆積による転倒防止', '② 運搬機械の安全操作', '③ 廃棄物の適正分別'], 現場の注意: '・廃材の配置を安全に\n・機械周辺への立入禁止' },
+      '残土処分': { 重点: ['① 建機操作時の安全確保', '② 落下・転倒物への注意', '③ 粉じん対策・マスク着用'], 現場の注意: '・建機周辺への立入禁止\n・粉じん対策を実施' },
+      '産業廃棄物分別': { 重点: ['① 分別作業の腰痛防止', '② 異物混入による事故防止', '③ 適正な分別・記録'], 現場の注意: '・分別ルールを徹底\n・廃棄物の記録管理' },
+      '劣化状況診断': { 重点: ['① 高所での転落防止', '② 既存建物の不安定性', '③ 調査機器の安全使用'], 現場の注意: '・高所調査は安全帯を着用\n・既住者への説明' },
+      '見積調査・仕様確認': { 重点: ['① 既存建物内での転倒・転落防止', '② 狭い空間での安全確保', '③ 既住者への配慮'], 現場の注意: '・既住者への説明と同意\n・既存建物の弱い箇所に注意' },
+      '建物状況調査': { 重点: ['① 既存建物の不安定性', '② 高所での転落防止', '③ 調査記録の正確性'], 現場の注意: '・専門的な調査の実施\n・既住者への丁寧な説明' },
+      '床下点検': { 重点: ['① 狭い空間での安全確保', '② 既存構造の不安定性', '③ 通風・採光の確保'], 現場の注意: '・床下の湿度・温度確認\n・重篤な疾患への配慮' },
+      '屋根裏点検': { 重点: ['① 高所での転落防止', '② 既存構造の不安定性', '③ 換気・採光の確保'], 現場の注意: '・屋根裏の複雑構造に注意\n・足場を確保して作業' }
+    };
+    
+    // ===== 新しい大工工事の作業用KYデータ =====
+    const additionalKyDatabase = {
+      '天井ボード貼': { 重点: ['① 高所作業の転落防止', '② 天井板の落下防止', '③ 工具・部材の落下防止'], 現場の注意: '・脚立は安定した場所に配置\n・複数人で天井板を支持' },
+      '巾木取付': { 重点: ['① 工具・ビスの刺傷防止', '② 脚立の転倒防止', '③ 床面の整理整頓'], 現場の注意: '・脚立は水平・安定確認\n・床面の障害物を除去' },
+      '腰壁貼': { 重点: ['① 高所作業の転落防止', '② パネル・ボードの落下防止', '③ 脚立の安定確保'], 現場の注意: '・脚立は安定した場所に配置\n・パネル搬入は複数人で対応' },
+      '棚取付': { 重点: ['① 高所作業の転落防止', '② 棚の転倒・落下防止', '③ 固定ビス・アンカーの確認'], 現場の注意: '・棚の固定をしっかり施工\n・耐荷重を確認して取付' },
+      '造作家具組立': { 重点: ['① 工具・ビスの刺傷防止', '② 部材の落下防止', '③ 組立時の指の挟み込み防止'], 現場の注意: '・組立順序を事前確認\n・複数人で大きな部材を扱う' },
+      'クローゼット枠組': { 重点: ['① 脚立からの転落防止', '② 工具使用時の安全確保', '③ 部材の落下防止'], 現場の注意: '・脚立は安定した場所に配置\n・複数人で協力して施工' },
+      'カウンター取付': { 重点: ['① 高所作業の転落防止', '② カウンターの落下防止', '③ 工具による怪我防止'], 現場の注意: '・カウンター搬入は複数人で対応\n・下地の確認をしっかり実施' },
+      '瓦の漆喰補修': { 重点: ['① 屋根上での転落防止', '② 漆喰材の落下防止', '③ 高所作業の安全帯着用'], 現場の注意: '・屋根作業は安全帯を必須\n・漆喰材の固定を確認' },
+      '棟の取付': { 重点: ['① 屋根上での転落防止', '② 棟板金の落下防止', '③ 風対策・飛散防止'], 現場の注意: '・屋根作業は安全帯必須\n・棟の固定をしっかり施工' },
+      '隅棟の施工': { 重点: ['① 高所での転落防止', '② 複雑構造での落下防止', '③ 風対策・飛散防止'], 現場の注意: '・複数人で協力して施工\n・隅棟固定の確認' },
+      '水切りガード取付': { 重点: ['① 高所作業の転落防止', '② ガード部材の落下防止', '③ 脚立の安定確保'], 現場の注意: '・高所作業は脚立を安定させる\n・周囲への落下物防止' },
+      '屋根板金補修': { 重点: ['① 屋根上での転落防止', '② 板金による切傷防止', '③ 風対策・飛散防止'], 現場の注意: '・屋根作業は安全帯必須\n・板金の端処理を実施' },
+      'ALC版貼り': { 重点: ['① 高所作業の転落防止', '② ALC版の落下防止', '③ 足場・脚立の安定確保'], 現場の注意: '・ALC版搬入は複数人で対応\n・足場は十分な幅と柵確認' },
+      '通気胴縁調整': { 重点: ['① 高所作業の転落防止', '② 部材の落下防止', '③ 足場の安定確保'], 現場の注意: '・高所作業は脚立を安定させる\n・周囲への落下物防止' },
+      'コーキング補修': { 重点: ['① 脚立からの転落防止', '② 化学薬品による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・コーキング剤の換気を確保\n・保護具の着用を徹底' },
+      'スイング機構調整': { 重点: ['① 建具の巻き込み防止', '② 工具使用時の安全確保', '③ 周囲への落下物防止'], 現場の注意: '・調整時に周囲に注意\n・機構の動作確認' },
+      'クロス張替': { 重点: ['① 脚立からの転落防止', '② 接着剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・接着剤の換気を確保\n・脚立は安定した場所に配置' },
+      'タイル貼替': { 重点: ['① 既存タイルの剥落防止', '② 工具使用時の安全確保', '③ 粉じん・破片対策'], 現場の注意: '・既存タイル剥落防止対策\n・保護具の着用を徹底' },
+      'クッションフロア貼替': { 重点: ['① 既存床材搬出時の腰痛防止', '② 接着剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・古床材搬出は複数人で対応\n・接着剤の取扱いに注意' },
+      'フローリング張替': { 重点: ['① フローリング搬入時の腰痛防止', '② 釘・ビスの刺傷防止', '③ 段差・転倒防止'], 現場の注意: '・フローリングは複数人で運搬\n・釘は抜くか曲げて処理' },
+      'モップがけ・ワックス': { 重点: ['① 床面の滑り・転倒防止', '② 化学薬品による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・ワックス施工時は立入禁止表示\n・換気を常時実施' },
+      '樹木剪定': { 重点: ['① 高所での転落防止', '② 枝の落下防止', '③ 道具使用時の安全確保'], 現場の注意: '・高所作業は安全帯を着用\n・周囲への落下枝防止' },
+      '落ち葉清掃': { 重点: ['① 床面の滑り・転倒防止', '② 腰痛防止・正しい持ち方', '③ 作業エリアの安全確保'], 現場の注意: '・床面の凹凸確認\n・重い集積物は複数人で対応' },
+      '側溝清掃': { 重点: ['① 側溝への転落防止', '② 汚水・汚物への対策', '③ 保護具の着用'], 現場の注意: '・側溝は転倒防止柵設置\n・適切な保護具を着用' },
+      '竹林整備': { 重点: ['① 高所での転落防止', '② チェーンソー・刈払機の安全操作', '③ 竹の落下防止'], 現場の注意: '・竹林整備は認定者のみ\n・周囲の安全確認を徹底' },
+      '壁塗装補修': { 重点: ['① 脚立からの転落防止', '② 塗料による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・塗料の換気を確保\n・脚立は安定した場所に配置' },
+      '天井配線補修': { 重点: ['① 高所作業の転落防止', '② 感電防止・電源確認', '③ 脚立・足場の安定確保'], 現場の注意: '・電源は必ず確認\n・脚立は安定した場所に配置' },
+      'バルコニー防水': { 重点: ['① 高所での転落防止', '② 防水材による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・バルコニー端の安全確認\n・防水施工時は換気実施' },
+      'ドレン清掃': { 重点: ['① 高所での転落防止', '② 汚水への対策', '③ 保護具の着用'], 現場の注意: '・高所作業は脚立を安定させる\n・適切な保護具を着用' },
+      '防水テープ補修': { 重点: ['① 脚立からの転落防止', '② 接着剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・テープ施工時は換気確保\n・脚立は安定した場所に配置' },
+      '給排水点検': { 重点: ['① 既存配管の不安定性', '② 水漏れ対策', '③ 既住者への配慮'], 現場の注意: '・既住者に事前通知\n・配管の状況を丁寧に確認' },
+      '配線点検': { 重点: ['① 感電防止・電源確認', '② 配線の劣化確認', '③ 既住者への配慮'], 現場の注意: '・電源は必ず確認\n・劣化箇所を記録' },
+      '断熱材確認': { 重点: ['① 高所での転落防止', '② 断熱材による健康被害', '③ 既住者への配慮'], 現場の注意: '・屋根裏・壁内での安全確保\n・既住者に説明'
+    };
+    
+    let currentTab = 0;
+    let selectedWorks = [];
+    let selectedLeader = '';
+    let selectedLeaderEmoji = '';
+    let selectedProjectType = '';
+    let selectedGenre = '';
+    let weather = { temp: 25, weather: '晴れ' };
+    
+    const safetyMottos = [
+      '🛡️ 今日の安全は明日の資産',
+      '👁️ 一瞬の油断が一生の後悔',
+      '🤝 安全は全員の責任',
+      '⚠️ 報告・連絡・相談で事故防止',
+      '🚦 ルール守って無事故達成',
+      '💪 安全意識が仕事の基本',
+      '🏆 安全第一、品質第二、生産第三',
+      '👷 身につける保護具は命の投資',
+      '⏰ 急ぐな、焦るな、確認しよう',
+      '🔍 段差・段落・見落としに注意',
+      '🧠 危機感を持って作業を始めよう',
+      '⚡ 疲れた時こそ注意が必要',
+      '🌡️ 暑い日は水分補給をこまめに',
+      '🎯 安全行動は習慣化が大事',
+      '📢 「ヨシ！」まで一体の意思',
+      '🛠️ 道具の点検は毎朝の習慣',
+      '🚩 危ないと感じたら立ち止まる',
+      '💯 完璧な安全は存在しない、だから気をつける',
+      '🌅 毎朝の朝礼が事故を防ぐ',
+      '🤲 仲間を守る気持ちが安全を作る',
+      '👂 上司の指示は安全の証',
+      '🔗 チームワークで無事故を実現',
+      '📍 現場を知ることが安全のカギ',
+      '✔️ 小さなミスが大事故につながる',
+      '🎪 遊び心を持つな、緊張感を持て',
+      '🏃 走るな、歩け、確認しながら',
+      '🧪 「そのうち大丈夫」は事故の始まり',
+      '🎓 安全教育は毎日の学び',
+      '🌟 今日も無事に帰宅するために',
+      '💫 安全な職場は幸せな職場',
+      '🔐 セーフティファーストで全員帰宅',
+      '🎨 安全だから素晴らしい成果が生まれる',
+      '🚀 安全があれば何でもできる',
+      '🌈 事故ゼロで家族に笑顔を',
+      '⭐ 安全への一歩が未来を変える',
+      '🛡️ 予防の力で事故を起こさせない',
+      '🎯 今日も全員で安全ゴール',
+      '💡 小さな工夫が大きな安全を生む',
+      '🏅 安全こそが最高の報酬',
+      '🌍 世界レベルの安全意識を目指そう'
+    ];
+    
+    function getMottoForToday() {
+      const today = new Date();
+      const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+      const index = dayOfYear % safetyMottos.length;
+      return safetyMottos[index];
+    }
+    
+    function showSafetyMotto() {
+      const motto = getMottoForToday();
+      document.getElementById('mottoText').textContent = motto;
+      document.getElementById('safetyMottoBg').style.display = 'block';
+      document.getElementById('safetyMottoContainer').style.display = 'block';
+      
+      setTimeout(() => {
+        closeSafetyMotto();
+      }, 5000);
+    }
+    
+    function closeSafetyMotto() {
+      document.getElementById('safetyMottoBg').style.display = 'none';
+      document.getElementById('safetyMottoContainer').style.display = 'none';
+    }
+    
+    function selectLeader(name, emoji) {
+      document.querySelectorAll('.character-btn').forEach(btn => btn.classList.remove('selected'));
+      event.target.closest('.character-btn').classList.add('selected');
+      selectedLeader = name;
+      selectedLeaderEmoji = emoji;
+      document.getElementById('leader').value = name;
+      playSound('select');
+      updateProgress();
+    }
+    
+    function updateProjectType() {
+      selectedProjectType = document.getElementById('projecttype').value;
+      selectedGenre = '';
+      
+      // facilitySelectをリセット
+      const facilitySelect = document.getElementById('facilitySelect');
+      facilitySelect.value = '';
+      facilitySelect.innerHTML = '<option value="">-- 選んでね --</option>';
+      
+      // ジャンルセレクトを更新
+      const genreSelect = document.getElementById('genre');
+      const genreFormGroup = document.getElementById('genreFormGroup');
+      const facilityFormGroup = document.getElementById('facilityFormGroup');
+      
+      if (selectedProjectType && workTypesByProject[selectedProjectType]) {
+        genreFormGroup.style.display = 'block';
+        facilityFormGroup.style.display = 'block';  // ✅ 現場名フォームグループを表示
+        genreSelect.innerHTML = '<option value="">-- 工事ジャンルを選んでください --</option>';
+        
+        workTypesByProject[selectedProjectType].forEach(section => {
+          const option = document.createElement('option');
+          option.value = section.genre;
+          option.textContent = section.genre;
+          genreSelect.appendChild(option);
+        });
+        
+        // フォームグループまでスクロール
+        setTimeout(() => {
+          genreFormGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        genreFormGroup.style.display = 'none';
+        facilityFormGroup.style.display = 'none';  // ✅ 選ばれていない時は非表示
+        renderWorkTypes();
+      }
+      
+      // 現場名を確実に表示させる
+      updateFacilities();
+      playSound('select');
+      updateProgress();
+    }
+    
+    function renderWorkTypes() {
+      const container = document.getElementById('workTypesContainer');
+      container.innerHTML = '';
+      
+      if (!selectedProjectType) {
+        container.innerHTML = '<div style="color: #999; text-align: center; padding: 2rem; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #999;">📋 左のタブ【1️⃣ 基本情報】で<br>工事種別を選んでください</div>';
+        return;
+      }
+      
+      if (!selectedGenre && workTypesByProject[selectedProjectType][0].genre) {
+        container.innerHTML = '<div style="color: #d9534f; text-align: center; padding: 2rem; background: #fff5f5; border-radius: 8px; border-left: 4px solid #d9534f;">⚠️ 左のタブ【1️⃣ 基本情報】で<br>工事ジャンルを選んでください</div>';
+        return;
+      }
+      
+      const sections = workTypesByProject[selectedProjectType];
+      
+      if (selectedGenre) {
+        // ジャンルが選ばれている場合、そのジャンルのみ表示
+        const section = sections.find(s => s.genre === selectedGenre);
+        if (section) {
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'work-group';
+          
+          section.works.forEach(work => {
+            const btn = document.createElement('button');
+            btn.className = 'work-btn';
+            btn.textContent = work;
+            btn.onclick = () => toggleWork(work);
+            groupDiv.appendChild(btn);
+          });
+          
+          container.appendChild(groupDiv);
+        }
+      } else {
+        // すべてのジャンルを表示
+        sections.forEach(section => {
+          const genreHeader = document.createElement('div');
+          genreHeader.className = 'genre-header';
+          genreHeader.textContent = section.genre;
+          container.appendChild(genreHeader);
+          
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'work-group';
+          
+          section.works.forEach(work => {
+            const btn = document.createElement('button');
+            btn.className = 'work-btn';
+            btn.textContent = work;
+            btn.onclick = () => toggleWork(work);
+            groupDiv.appendChild(btn);
+          });
+          
+          container.appendChild(groupDiv);
+        });
+      }
+    }
+    
+    function toggleWork(work) {
+      if (selectedWorks.includes(work)) {
+        selectedWorks = selectedWorks.filter(w => w !== work);
+      } else {
+        selectedWorks.push(work);
+      }
+      
+      document.querySelectorAll('.work-btn').forEach(btn => {
+        if (btn.textContent === work) {
+          btn.classList.toggle('selected');
+        }
+      });
+      
+      playSound('select');
+      updateProgress();
+    }
+    
+    function switchTab(tabIndex) {
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(tb => tb.classList.remove('active'));
+      
+      document.getElementById(`tab${tabIndex}`).classList.add('active');
+      document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
+      
+      currentTab = tabIndex;
+      updateProgress();
+      updateConfirmation();
+      updateButtonGroup();
+    }
+    
+    function nextTab() {
+      // タブ1（基本情報）から進む場合は必須項目チェック
+      if (currentTab === 0) {
+        if (!document.getElementById('date').value) {
+          alert('📅 日付を選んでください！');
+          return;
+        }
+        if (!selectedLeader) {
+          alert('👤 リーダーを選んでください！');
+          return;
+        }
+        if (!selectedProjectType) {
+          alert('🏗️ 工事種別を選んでください！');
+          return;
+        }
+        if (workTypesByProject[selectedProjectType][0]?.genre && !selectedGenre) {
+          alert('📂 工事ジャンルを選んでください！');
+          return;
+        }
+        if (!document.getElementById('facilityCustom').value) {
+          alert('📍 現場名を入力してください！');
+          return;
+        }
+      }
+      
+      // タブ2（作業内容）から進む場合は作業選択チェック
+      if (currentTab === 1) {
+        if (selectedWorks.length === 0) {
+          alert('🛠️ 作業内容を1つ以上選んでください！');
+          return;
+        }
+      }
+      
+      // タブ3（詳細入力）から進む場合は詳細チェック
+      if (currentTab === 2) {
+        if (document.getElementById('workDetail').value.length < 20) {
+          alert('📝 作業詳細を20文字以上入力してください！');
+          return;
+        }
+      }
+      
+      if (currentTab < 3) {
+        switchTab(currentTab + 1);
+        document.getElementById('mainContent').scrollTop = 0;
+      } else {
+        generateSheet();
+      }
+    }
+    
+    function previousTab() {
+      if (currentTab > 0) {
+        switchTab(currentTab - 1);
+        document.getElementById('mainContent').scrollTop = 0;
+      }
+    }
+    
+    function updateButtonGroup() {
+      const buttonGroup = document.getElementById('buttonGroup');
+      if (currentTab === 3) {
+        buttonGroup.innerHTML = `
+          <button class="btn-secondary" onclick="previousTab()">◀️ 戻る</button>
+          <button class="btn-primary" onclick="generateSheet()">🎉 完成！</button>
+        `;
+      } else {
+        buttonGroup.innerHTML = `
+          <button class="btn-secondary" onclick="previousTab()">◀️ 戻る</button>
+          <button class="btn-primary" onclick="nextTab()">進む ▶️</button>
+        `;
+      }
+    }
+    
+    function updateProgress() {
+      const maxSteps = 11;
+      let completedSteps = 0;
+      
+      if (selectedLeader) completedSteps++;
+      if (document.getElementById('date').value) completedSteps++;
+      if (selectedProjectType) completedSteps++;
+      if (selectedGenre) completedSteps++;
+      if (document.getElementById('facilityCustom').value) completedSteps++;
+      if (selectedWorks.length > 0) completedSteps += 2;
+      if (document.getElementById('workDetail').value.length > 20) completedSteps += 2;
+      
+      const progress = (completedSteps / maxSteps) * 100;
+      document.getElementById('progressFill').style.width = progress + '%';
+    }
+    
+    function updateConfirmation() {
+      const projectLabels = { new: '新築工事', public: '公社工事', ob: 'OB客', tenant: 'テナント工事', other: 'その他' };
+      
+      document.getElementById('confirmDate').textContent = document.getElementById('date').value || '-';
+      document.getElementById('confirmLeader').textContent = selectedLeader || '-';
+      document.getElementById('confirmProject').textContent = projectLabels[selectedProjectType] || '-';
+      document.getElementById('confirmGenre').textContent = selectedGenre || '-';
+      document.getElementById('confirmFacility').textContent = document.getElementById('facilityCustom').value || '-';
+      document.getElementById('confirmWork').textContent = selectedWorks.join('、') || '-';
+      document.getElementById('confirmDetail').textContent = document.getElementById('workDetail').value.substring(0, 50) + '...' || '-';
+      document.getElementById('confirmTemp').textContent = weather.temp + '℃' || '-';
+      document.getElementById('confirmWeather').textContent = weather.weather || '-';
+    }
+    
+    function updateFacilities() {
+      const facilitySelect = document.getElementById('facilitySelect');
+      
+      if (!facilitySelect) {
+        console.warn('❌ facilitySelect not found');
+        return;
+      }
+      
+      console.log('🔧 updateFacilities called');
+      console.log('selectedProjectType:', selectedProjectType);
+      console.log('facilityMap:', facilityMap);
+      
+      // リセット
+      facilitySelect.innerHTML = '<option value="">-- 選んでね --</option>';
+      
+      // 工事種別が選ばれているかチェック
+      if (!selectedProjectType) {
+        console.warn('⚠️ No selectedProjectType');
+        return;
+      }
+      
+      // facilityMapにキーがあるかチェック
+      if (!facilityMap[selectedProjectType]) {
+        console.warn('⚠️ facilityMap does not have key:', selectedProjectType);
+        return;
+      }
+      
+      // 現場名を追加
+      const facilities = facilityMap[selectedProjectType];
+      console.log('facilities:', facilities);
+      
+      if (Array.isArray(facilities) && facilities.length > 0) {
+        facilities.forEach(facility => {
+          const option = document.createElement('option');
+          option.value = facility;
+          option.textContent = facility;
+          facilitySelect.appendChild(option);
+        });
+        console.log('✅ ' + facilities.length + ' facilities added');
+      } else {
+        console.warn('⚠️ facilities is empty or not array');
+      }
+    }
+    
+    function updateCustomFacility() {
+      const selected = document.getElementById('facilitySelect').value;
+      if (selected) document.getElementById('facilityCustom').value = selected;
+    }
+    
+    // ===== VOICE INPUT =====
+    function startVoiceInput() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'ja-JP';
+      
+      const voiceBtn = document.getElementById('voiceBtn');
+      voiceBtn.classList.add('listening');
+      voiceBtn.textContent = '🎙️ 聞いてます...';
+      
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        document.getElementById('workDetail').value = transcript;
+        voiceBtn.classList.remove('listening');
+        voiceBtn.textContent = '🎙️ 音声入力で説明';
+        playSound('success');
+      };
+      
+      recognition.onerror = () => {
+        voiceBtn.classList.remove('listening');
+        voiceBtn.textContent = '🎙️ 音声入力で説明';
+      };
+      
+      recognition.start();
+    }
+    
+    // ===== WEATHER =====
+    async function fetchWeather() {
+      try {
+        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.88&longitude=130.87&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=Asia/Tokyo');
+        const data = await response.json();
+        const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+        
+        const weatherMap = { 0: '晴れ', 1: '晴れ', 2: '曇り', 3: '曇り', 45: '霧', 51: '小雨', 61: '雨', 71: '雪', 80: '激しい雨', 85: '激しい雪' };
+        const emojiMap = { 0: '☀️', 1: '☀️', 2: '☁️', 3: '☁️', 45: '🌫️', 51: '🌧️', 61: '🌧️', 71: '❄️', 80: '⛈️', 85: '⛈️' };
+        
+        weather = { temp, weather: weatherMap[code] || '不明' };
+        
+        document.getElementById('tempDisplay').textContent = temp + '℃';
+        document.getElementById('weatherDisplay').textContent = weather.weather;
+        document.getElementById('weatherEmoji').textContent = emojiMap[code] || '❓';
+        
+        updateHeatstrokeLevel(temp);
+      } catch (e) {
+        weather = { temp: 25, weather: '晴れ' };
+        document.getElementById('tempDisplay').textContent = '25℃（参考値）';
+        document.getElementById('weatherDisplay').textContent = '晴れ';
+        updateHeatstrokeLevel(25);
+      }
+    }
+    
+    function updateHeatstrokeLevel(temp) {
+      let level, emoji, text;
+      if (temp >= 36) { level = '危険'; emoji = '🔴'; text = '作業中止'; }
+      else if (temp >= 31) { level = '厳重警戒'; emoji = '🟠'; text = '頻繁休憩'; }
+      else if (temp >= 26) { level = '警戒'; emoji = '🟡'; text = 'こまめ休憩'; }
+      else { level = '注意'; emoji = '🟢'; text = '通常対応'; }
+      
+      document.getElementById('heatstrokeLevel').textContent = text;
+      document.getElementById('heatstrokeEmoji').textContent = emoji;
+    }
+    
+    // ===== SOUND & EFFECTS =====
+    function playSound(type) {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        if (type === 'select') {
+          oscillator.frequency.value = 800;
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.1);
+        } else if (type === 'success') {
+          oscillator.frequency.value = 1200;
+          gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.2);
+        }
+      } catch (e) {}
+    }
+    
+    // ===== PARTICLES =====
+    function createFireworks(x, y) {
+      const canvas = document.getElementById('particleCanvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+      
+      const particles = [];
+      for (let i = 0; i < 30; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          life: 1,
+          emoji: ['🎉', '✨', '⭐', '🌟', '💫'][Math.floor(Math.random() * 5)]
+        });
+      }
+      
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let hasParticles = false;
+        
+        particles.forEach(p => {
+          if (p.life > 0) {
+            ctx.globalAlpha = p.life;
+            ctx.font = '24px Arial';
+            ctx.fillText(p.emoji, p.x, p.y);
+            
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2;
+            p.life -= 0.02;
+            hasParticles = true;
+          }
+        });
+        
+        if (hasParticles) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+    
+    // ===== SHEET GENERATION =====
+    function getHeatstrokeLevel(temp) {
+      if (temp >= 36) return { level: '【危険】', label: '作業中止・見直し', emoji: '🔴' };
+      if (temp >= 31) return { level: '【厳重警戒】', label: '頻繁に休憩・給水', emoji: '🟠' };
+      if (temp >= 26) return { level: '【警戒】', label: 'こまめに休憩・給水', emoji: '🟡' };
+      return { level: '【注意】', label: '通常対応', emoji: '🟢' };
+    }
+    
+    function getWaterTimeSchedule(baseHour = 9) {
+      const times = [];
+      for (let h = baseHour; h < 18; h += 1.5) {
+        const hour = Math.floor(h);
+        const min = Math.round((h - hour) * 60);
+        times.push(`${hour}:${min === 0 ? '00' : '30'}`);
+      }
+      return times.join('/');
+    }
+    
+    function calculatePoints() {
+      let points = 10;
+      
+      if (weather.temp >= 36) points += 20;
+      else if (weather.temp >= 31) points += 15;
+      else if (weather.temp >= 26) points += 10;
+      else points += 5;
+      
+      if (selectedWorks.length >= 3) points += 15;
+      else if (selectedWorks.length > 0) points += 10;
+      
+      const detailLength = document.getElementById('workDetail').value.length;
+      if (detailLength >= 100) points += 15;
+      else if (detailLength >= 50) points += 10;
+      else points += 5;
+      
+      if (selectedWorks.length >= 4) points += 10;
+      else if (selectedWorks.length >= 2) points += 5;
+      
+      if (selectedLeader) points += 5;
+      
+      return Math.min(points, 100);
+    }
+    
+    function getRating(points) {
+      if (points >= 90) return { rating: 'S', emoji: '🏆', badge: 'スーパースター！' };
+      if (points >= 80) return { rating: 'A', emoji: '⭐', badge: '優秀！' };
+      if (points >= 70) return { rating: 'B', emoji: '👍', badge: '良好！' };
+      if (points >= 60) return { rating: 'C', emoji: '👌', badge: '合格！' };
+      return { rating: 'D', emoji: '📝', badge: '要改善' };
+    }
+    
+    function generateBadges(points, detail, workCount) {
+      const badges = [];
+      
+      if (weather.temp >= 31) badges.push({ name: '🔥 高気温対応', earned: true });
+      else badges.push({ name: '🔥 高気温対応', earned: false });
+      
+      if (detail.length >= 100) badges.push({ name: '📝 詳細入力', earned: true });
+      else badges.push({ name: '📝 詳細入力', earned: false });
+      
+      if (workCount >= 5) badges.push({ name: '💪 多工種対応', earned: true });
+      else badges.push({ name: '💪 多工種対応', earned: false });
+      
+      if (points >= 80) badges.push({ name: '🌟 無事故ストリーク', earned: true });
+      else badges.push({ name: '🌟 無事故ストリーク', earned: false });
+      
+      return badges;
+    }
+    
+    async function generateSheet() {
+      const date = document.getElementById('date').value;
+      const facility = document.getElementById('facilityCustom').value;
+      const workDetail = document.getElementById('workDetail').value;
+      
+      if (!date || !selectedLeader || !selectedProjectType || !selectedGenre || !facility || selectedWorks.length === 0 || !workDetail) {
+        alert('すべての項目を入力してください！');
+        return;
+      }
+      
+      const points = calculatePoints();
+      const { rating, emoji: ratingEmoji, badge: ratingBadge } = getRating(points);
+      const badges = generateBadges(points, workDetail, selectedWorks.length);
+      
+      const dateObj = new Date(date);
+      const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
+      const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}(${dayOfWeek})`;
+      
+      const projectLabels = { new: '新築工事', public: '公社工事', ob: 'OB客', tenant: 'テナント工事', other: 'その他' };
+      
+      let kyContent = `【${dateStr} 朝礼安全】${facility}\n`;
+      kyContent += `リーダー：${selectedLeaderEmoji} ${selectedLeader}\n`;
+      kyContent += `工事種別：${projectLabels[selectedProjectType]} / ${selectedGenre}\n`;
+      kyContent += `━━━━━━━━━\n`;
+      kyContent += `🏗 本日：${selectedWorks.join('、')}\n`;
+      kyContent += `⚠ 今日の重点\n`;
+      
+      const allKeyPoints = new Set();
+      selectedWorks.forEach(wt => {
+        // 元のKYデータベースと追加KYデータベースから検索
+        const kyData = kyDatabase[wt] || additionalKyDatabase[wt];
+        if (kyData) {
+          kyData.重点.forEach(kp => allKeyPoints.add(kp));
+        }
+      });
+      
+      Array.from(allKeyPoints).slice(0, 3).forEach(kp => {
+        kyContent += ` ${kp}\n`;
+      });
+      
+      kyContent += `📍 現場の注意\n`;
+      selectedWorks.forEach(wt => {
+        const kyData = kyDatabase[wt] || additionalKyDatabase[wt];
+        if (kyData) {
+          kyContent += `${kyData.現場の注意}\n`;
+        }
+      });
+      
+      const heatstroke = getHeatstrokeLevel(weather.temp);
+      kyContent += `🌡 熱中症${heatstroke.level}\n`;
+      kyContent += ` 気温${weather.temp}℃\n`;
+      kyContent += ` ・${heatstroke.label}。定期的に休憩・給水を実施\n`;
+      
+      const waterTimes = getWaterTimeSchedule();
+      kyContent += `🥤給水タイム例 ${waterTimes}\n`;
+      kyContent += `💡 整理整頓・足元の片付け（4S）でつまずき・転倒を防ぐ\n`;
+      kyContent += `✅ 指差呼称ヨシ！ 体調管理ヨシ！\n`;
+      kyContent += `━━━━━━━━━\n`;
+      kyContent += `無事故無災害でいきましょう💪`;
+      
+      document.getElementById('kySheet').textContent = kyContent;
+      
+      document.getElementById('pointsValue').textContent = points;
+      document.getElementById('ratingBadge').textContent = ratingEmoji;
+      document.getElementById('pointsDisplay').innerHTML += `<div style="font-size: 18px; font-weight: 600;">${rating}評価：${ratingBadge}</div>`;
+      
+      const badgesHTML = badges.map(b => `
+        <div class="badge ${b.earned ? 'earned' : 'notearned'}">
+          ${b.name}
+        </div>
+      `).join('');
+      document.getElementById('badgesContainer').innerHTML = badgesHTML;
+      
+      updateRanking(selectedLeader, points);
+      
+      createFireworks(window.innerWidth / 2, window.innerHeight / 2);
+      playSound('success');
+      
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('buttonGroup').style.display = 'none';
+      document.getElementById('resultContainer').style.display = 'block';
+      document.getElementById('resultContainer').scrollTop = 0;
+    }
+    
+    function updateRanking(leader, newPoints) {
+      let ranking = JSON.parse(localStorage.getItem('monthlyRanking') || '{}');
+      
+      if (!ranking[leader]) ranking[leader] = 0;
+      ranking[leader] += newPoints;
+      
+      localStorage.setItem('monthlyRanking', JSON.stringify(ranking));
+      
+      const sorted = Object.entries(ranking)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      const medals = ['🥇', '🥈', '🥉'];
+      const rankingHTML = sorted.map((entry, i) => `
+        <div class="ranking-item">
+          <div class="ranking-medal">${medals[i]}</div>
+          <div class="ranking-name">${entry[0]}</div>
+          <div class="ranking-points">${entry[1]}点</div>
+        </div>
+      `).join('');
+      
+      document.getElementById('rankingDisplay').innerHTML = rankingHTML;
+    }
+    
+    function printSheet() {
+      window.print();
+    }
+    
+    function newEntry() {
+      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('buttonGroup').style.display = 'flex';
+      document.getElementById('resultContainer').style.display = 'none';
+      
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('projecttype').value = '';
+      document.getElementById('genre').value = '';
+      document.getElementById('facilitySelect').innerHTML = '<option value="">-- 選んでね --</option>';
+      document.getElementById('facilityCustom').value = '';
+      document.getElementById('workDetail').value = '';
+      document.getElementById('toolsUsed').value = '';
+      selectedWorks = [];
+      selectedProjectType = '';
+      selectedGenre = '';
+      
+      document.querySelectorAll('.work-btn').forEach(btn => btn.classList.remove('selected'));
+      document.querySelectorAll('.character-btn').forEach(btn => btn.classList.remove('selected'));
+      
+      renderWorkTypes();
+      switchTab(0);
+    }
+    
+    // ===== INIT =====
+    window.addEventListener('load', () => {
+      showSafetyMotto();
+      
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      fetchWeather();
+      updateProgress();
+      renderWorkTypes();
+    });
+  </script>
+</body>
+</html>
