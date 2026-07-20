@@ -1,1 +1,26 @@
 
+Mac:estimate-app kenichi$ # ターミナルで実行
+Mac:estimate-app kenichi$ cd ~/ky-anzen  # あなたのリポジトリディレクトリ
+-bash: cd: /Users/kenichi/ky-anzen: No such file or directory
+Mac:estimate-app kenichi$ 
+Mac:estimate-app kenichi$ # 修正版をコピー
+Mac:estimate-app kenichi$ cp /mnt/user-data/outputs/index.html ./index.html
+cp: /mnt/user-data/outputs/index.html: No such file or directory
+Mac:estimate-app kenichi$ 
+Mac:estimate-app kenichi$ # GitHub にプッシュ
+Mac:estimate-app kenichi$ git add index.html
+Mac:estimate-app kenichi$ git commit -m "V3.3: 外構工事拡充、日付/天候/気温自動入力"
+Author identity unknown
+
+*** Please tell me who you are.
+
+Run
+
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+
+to set your account's default identity.
+Omit --global to set the identity only in this repository.
+
+fatal: unable to auto-detect email address (got 'kenichi@Mac.(none)')
+Mac:estimate-app kenichi$ git push origin main
