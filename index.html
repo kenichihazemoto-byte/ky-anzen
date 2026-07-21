@@ -324,16 +324,16 @@
         <div class="form-group">
           <label>👤 リーダーを選んでね！</label>
           <div class="character-selector">
-            <button class="character-btn" onclick="selectLeader('ビン', '🟠')">🟠<div class="character-name">ビン</div></button>
-            <button class="character-btn" onclick="selectLeader('ドン', '🟡')">🟡<div class="character-name">ドン</div></button>
-            <button class="character-btn" onclick="selectLeader('永井', '🟢')">🟢<div class="character-name">永井</div></button>
-            <button class="character-btn" onclick="selectLeader('山口', '🔵')">🔵<div class="character-name">山口</div></button>
-            <button class="character-btn" onclick="selectLeader('江口', '🟣')">🟣<div class="character-name">江口</div></button>
-            <button class="character-btn" onclick="selectLeader('アンディ', '🟤')">🟤<div class="character-name">アンディ</div></button>
-            <button class="character-btn" onclick="selectLeader('リフキ', '⚫')">⚫<div class="character-name">リフキ</div></button>
-            <button class="character-btn" onclick="selectLeader('イクノ', '❤️')">❤️<div class="character-name">イクノ</div></button>
-            <button class="character-btn" onclick="selectLeader('トーヨーテック', '⚪')" style="border: 3px dashed #ccc;">⚪<div class="character-name">トー</div></button>
-            <button class="character-btn" onclick="selectLeader('ミロク', '🩶')">🩶<div class="character-name">ミロク</div></button>
+            <button class="character-btn" onclick="selectLeader('ビン', '🟠', this)">🟠<div class="character-name">ビン</div></button>
+            <button class="character-btn" onclick="selectLeader('ドン', '🟡', this)">🟡<div class="character-name">ドン</div></button>
+            <button class="character-btn" onclick="selectLeader('永井', '🟢', this)">🟢<div class="character-name">永井</div></button>
+            <button class="character-btn" onclick="selectLeader('山口', '🔵', this)">🔵<div class="character-name">山口</div></button>
+            <button class="character-btn" onclick="selectLeader('江口', '🟣', this)">🟣<div class="character-name">江口</div></button>
+            <button class="character-btn" onclick="selectLeader('アンディ', '🟤', this)">🟤<div class="character-name">アンディ</div></button>
+            <button class="character-btn" onclick="selectLeader('リフキ', '⚫', this)">⚫<div class="character-name">リフキ</div></button>
+            <button class="character-btn" onclick="selectLeader('イクノ', '❤️', this)">❤️<div class="character-name">イクノ</div></button>
+            <button class="character-btn" onclick="selectLeader('トーヨーテック', '⚪', this)" style="border: 3px dashed #ccc;">⚪<div class="character-name">トー</div></button>
+            <button class="character-btn" onclick="selectLeader('ミロク', '🩶', this)">🩶<div class="character-name">ミロク</div></button>
           </div>
           <input type="hidden" id="leader">
         </div>
@@ -1072,9 +1072,9 @@
       document.getElementById('safetyMottoContainer').style.display = 'none';
     }
     
-    function selectLeader(name, emoji) {
+    function selectLeader(name, emoji, btnEl) {
       document.querySelectorAll('.character-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.closest('.character-btn').classList.add('selected');
+      if (btnEl) btnEl.classList.add('selected');
       selectedLeader = name;
       selectedLeaderEmoji = emoji;
       document.getElementById('leader').value = name;
