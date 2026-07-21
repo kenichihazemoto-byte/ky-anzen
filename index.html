@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>朝礼安全・KY活動シート V3.2 | ハゼモト建設</title>
+  <title>朝礼安全・KY活動シート V3.3 | ハゼモト建設</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
     html { scroll-behavior: smooth; }
@@ -112,7 +112,34 @@
     }
     .work-btn.selected::before { content: '☑'; }
     
+    .tool-suggest-title { font-size: 12px; font-weight: 700; color: #667eea; margin: 0.6rem 0 0.4rem; }
+    .tool-suggest-group { margin-bottom: 0.6rem; }
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.8rem;
+      margin: 0.2rem 0.3rem 0.2rem 0;
+      background: #f0f0f0;
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tool-btn:active { transform: scale(0.95); }
+    .tool-btn.selected {
+      background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+      color: white;
+      border-color: #2e7d32;
+    }
+    .tool-btn::before { content: '＋ '; }
+    .tool-btn.selected::before { content: '✓ '; }
+    
     .category-label { font-size: 12px; font-weight: 700; color: #667eea; margin-top: 1rem; margin-bottom: 0.5rem; padding: 0.5rem; background: #f5f5ff; border-radius: 4px; }
+    #langHelperDisplay ruby { ruby-align: center; }
+    #langHelperDisplay rt { font-size: 0.55em; color: #667eea; }
+    .lang-toggle-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; border-color: #667eea !important; }
     .genre-header { font-size: 14px; font-weight: 700; color: #764ba2; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #764ba2; }
     
     .voice-input-btn { 
@@ -269,7 +296,7 @@
   
   <div class="container">
     <div class="header">
-      <h1>🏗️ 朝礼安全・KY活動シート V3.2</h1>
+      <h1>🏗️ 朝礼安全・KY活動シート V3.3</h1>
       <p>工事種別＆ジャンル別 スマート入力版</p>
     </div>
     
@@ -382,6 +409,7 @@
         <div class="form-group">
           <label for="toolsUsed">🔧 使用した道具・重機</label>
           <input type="text" id="toolsUsed" placeholder="例：ノコギリ、ハンマー、インパクトドライバー、バックホー">
+          <div id="toolSuggestions" style="margin-top: 10px;"></div>
         </div>
       </div>
       
@@ -426,9 +454,22 @@
     
     <div class="ky-sheet" id="kySheet" style="white-space: pre-wrap; margin: 1rem 0;"></div>
     
+    <div id="langHelperSection" style="margin: 1rem 0;">
+      <div style="font-size: 12px; color: #667eea; font-weight: 700; margin-bottom: 0.5rem;">🌐 外国人スタッフ向け：ふりがな・多言語で見る</div>
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap;">
+        <button class="lang-toggle-btn" onclick="showLangHelper('ja', event)" style="padding: 0.4rem 0.8rem; border-radius: 16px; border: 2px solid #ddd; background: #f0f0f0; font-size: 12px; font-weight: 600; cursor: pointer;">🇯🇵 ふりがな</button>
+        <button class="lang-toggle-btn" onclick="showLangHelper('vi', event)" style="padding: 0.4rem 0.8rem; border-radius: 16px; border: 2px solid #ddd; background: #f0f0f0; font-size: 12px; font-weight: 600; cursor: pointer;">🇻🇳 Tiếng Việt</button>
+        <button class="lang-toggle-btn" onclick="showLangHelper('id', event)" style="padding: 0.4rem 0.8rem; border-radius: 16px; border: 2px solid #ddd; background: #f0f0f0; font-size: 12px; font-weight: 600; cursor: pointer;">🇮🇩 Bahasa Indonesia</button>
+      </div>
+      <div id="langHelperDisplay" style="background: #f5f5ff; border-radius: 8px; padding: 1rem; font-size: 13px; line-height: 1.9; display: none;"></div>
+    </div>
+    
     <div class="ranking-card">
       <h3 style="margin-bottom: 1rem;">🏆 今月のランキング TOP 3</h3>
       <div id="rankingDisplay"></div>
+      <button onclick="resetRankingHistory()" style="margin-top: 1rem; background: none; border: none; color: #999; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 0.3rem 0;">
+        🗑️ ランキング履歴をリセット（管理者用）
+      </button>
     </div>
     
     <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-bottom: 2rem;">
@@ -564,7 +605,7 @@
     
     const facilityMap = {
       new: ['安部様邸', '有銘様邸', '辻浩之様邸', '武谷様邸'],
-      public: ['到津団地', '日豊団地', '沼団地', '向山団地'],
+      public: ['下到津団地', '日豊団地', '沼団地', '向山団地'],
       ob: [], tenant: [], other: []
     };
     
@@ -713,11 +754,252 @@
       '防水テープ補修': { 重点: ['① 脚立からの転落防止', '② 接着剤による健康被害', '③ 換気・保護具の着用'], 現場の注意: '・テープ施工時は換気確保\n・脚立は安定した場所に配置' },
       '給排水点検': { 重点: ['① 既存配管の不安定性', '② 水漏れ対策', '③ 既住者への配慮'], 現場の注意: '・既住者に事前通知\n・配管の状況を丁寧に確認' },
       '配線点検': { 重点: ['① 感電防止・電源確認', '② 配線の劣化確認', '③ 既住者への配慮'], 現場の注意: '・電源は必ず確認\n・劣化箇所を記録' },
-      '断熱材確認': { 重点: ['① 高所での転落防止', '② 断熱材による健康被害', '③ 既住者への配慮'], 現場の注意: '・屋根裏・壁内での安全確保\n・既住者に説明'
+      '断熱材確認': { 重点: ['① 高所での転落防止', '② 断熱材による健康被害', '③ 既住者への配慮'], 現場の注意: '・屋根裏・壁内での安全確保\n・既住者に説明' }
     };
+    
+    // ===== 作業内容ごとの道具・機材候補データベース =====
+    const TOOL_DB = {
+      "屋根瓦解体": ["バール", "ハンマー", "一輪車", "防塵マスク"],
+      "壁床解体": ["電動ハンマー", "バール", "ディスクグラインダー", "防塵マスク"],
+      "躯体解体": ["電動ハンマー", "チェーンソー", "バックホー", "防塵マスク"],
+      "柱梁解体": ["チェーンソー", "バール", "ハンマー", "ユニック車"],
+      "基礎・擁壁破砕": ["バックホー", "電動ハンマー", "ブレーカー", "ダンプ"],
+      "石綿（アスベスト）除去": ["防塵マスク（防じん）", "防護服", "専用養生シート", "集じん機"],
+      "既存建材搬出": ["一輪車", "ダンプ", "台車", "軍手"],
+      "地盤調査": ["貫入試験機", "スコップ", "メジャー"],
+      "遣り方・墨出し": ["トランシット", "水糸", "墨つぼ", "ミニレベル"],
+      "根伐り（根切り）": ["バックホー", "スコップ", "ダンプ"],
+      "砂利敷き": ["ランマー（転圧機）", "スコップ", "一輪車"],
+      "捨てコンクリート": ["生コン車", "コテ", "タンパー", "レベル"],
+      "型枠設置": ["丸のこ", "インパクトドライバー", "水平器", "セパレーター"],
+      "鉄筋配筋": ["鉄筋カッター", "結束機", "番線", "スペーサー"],
+      "生コン打設": ["バイブレーター", "コテ", "生コン車", "均しトンボ"],
+      "型枠脱型": ["バール", "ハンマー", "ノミ"],
+      "防水・防湿シート張": ["カッター", "タッカー", "気密テープ"],
+      "仮設足場組立": ["単管パイプ", "クランプ", "ハンマー", "安全帯"],
+      "柱立て": ["チェーンブロック", "カケヤ", "レベル", "ユニック車"],
+      "梁・桁組": ["チェーンブロック", "カケヤ", "インパクトドライバー", "玉掛けワイヤー"],
+      "床張り": ["丸のこ", "インパクトドライバー", "釘打ち機", "レベル"],
+      "小屋組": ["丸のこ", "カケヤ", "インパクトドライバー", "玉掛けワイヤー"],
+      "階段工事": ["丸のこ", "インパクトドライバー", "かんな", "水平器"],
+      "野地板張": ["釘打ち機", "丸のこ", "安全帯"],
+      "ボード張り": ["ボードカッター", "ビス打ち機", "インパクトドライバー"],
+      "建具枠取付": ["インパクトドライバー", "水平器", "かんな"],
+      "天井ボード貼": ["ビス打ち機", "脚立", "ボードカッター"],
+      "巾木取付": ["丸のこ", "インパクトドライバー", "コーキングガン"],
+      "腰壁貼": ["丸のこ", "インパクトドライバー", "接着剤"],
+      "棚取付": ["インパクトドライバー", "水平器", "下地探し"],
+      "カウンター取付": ["インパクトドライバー", "水平器", "クランプ"],
+      "造作家具組立": ["インパクトドライバー", "クランプ", "サンダー"],
+      "クローゼット枠組": ["インパクトドライバー", "丸のこ", "水平器"],
+      "通気層設置": ["タッカー", "カッター", "脚立"],
+      "アンダーレイ・防水シート張": ["タッカー", "カッター", "安全帯"],
+      "瓦葺き": ["瓦切断機", "ハンマー", "安全帯"],
+      "スレート葺き": ["釘打ち機", "カッター", "安全帯"],
+      "金属板葺き": ["はさみ（板金鋏）", "コーキングガン", "安全帯"],
+      "瓦の漆喰補修": ["コテ", "ハケ", "安全帯"],
+      "棟の取付": ["ハンマー", "ビス打ち機", "安全帯"],
+      "隅棟の施工": ["ハンマー", "ビス打ち機", "安全帯"],
+      "雨樋取付": ["インパクトドライバー", "水平器", "脚立"],
+      "軒天井張": ["ビス打ち機", "脚立", "ボードカッター"],
+      "水切りガード取付": ["インパクトドライバー", "コーキングガン"],
+      "屋根板金補修": ["はさみ（板金鋏）", "コーキングガン", "安全帯"],
+      "防水・透湿シート張": ["タッカー", "カッター", "気密テープ"],
+      "下地胴縁設置": ["丸のこ", "インパクトドライバー", "水平器"],
+      "サイディング貼り": ["サイディングボード専用カッター", "インパクトドライバー", "コーキングガン"],
+      "タイル貼り": ["コテ", "タイルカッター", "ゴムハンマー"],
+      "外壁塗装": ["ローラー", "刷毛", "高圧洗浄機", "養生シート"],
+      "シーリング施工": ["コーキングガン", "ヘラ", "マスキングテープ"],
+      "樋・雨水器具取付": ["インパクトドライバー", "水平器", "脚立"],
+      "外壁パネル取付": ["インパクトドライバー", "クランプ", "コーキングガン"],
+      "ALC版貼り": ["クレーン", "インパクトドライバー", "コーキングガン"],
+      "通気胴縁調整": ["丸のこ", "インパクトドライバー"],
+      "コーキング補修": ["コーキングガン", "ヘラ", "マスキングテープ"],
+      "飾り部材取付": ["インパクトドライバー", "接着剤"],
+      "窓・サッシ取付": ["インパクトドライバー", "水平器", "コーキングガン"],
+      "ドア・建具取付": ["インパクトドライバー", "かんな", "水平器"],
+      "防火シャッター取付": ["インパクトドライバー", "クレーン", "水平器"],
+      "雨戸取付": ["インパクトドライバー", "水平器"],
+      "内部建具取付": ["インパクトドライバー", "かんな", "水平器"],
+      "サッシ調整": ["ドライバー", "水平器", "潤滑スプレー"],
+      "枠組み・シーリング": ["インパクトドライバー", "コーキングガン"],
+      "装飾パネル取付": ["インパクトドライバー", "接着剤"],
+      "ガラス施工": ["吸盤（ガラス吸着盤）", "グレイジングガスケット", "ヘラ"],
+      "スイング機構調整": ["ドライバー", "潤滑スプレー"],
+      "壁・天井ボード張": ["ボードカッター", "ビス打ち機", "インパクトドライバー"],
+      "クロス張り": ["のり付け機", "なで刷毛", "ジョイントローラー", "カッター"],
+      "床張り（フローリング・タイル）": ["丸のこ", "インパクトドライバー", "ゴムハンマー"],
+      "額縁・モール取付": ["丸のこ", "インパクトドライバー", "コーキングガン"],
+      "キッチン取付": ["インパクトドライバー", "水平器", "モンキーレンチ"],
+      "洗面台設置": ["インパクトドライバー", "モンキーレンチ", "シールテープ"],
+      "照明枠・配線": ["ドライバー", "検電器", "電工ペンチ"],
+      "コンセント枠取付": ["ドライバー", "検電器"],
+      "窓枠補修": ["インパクトドライバー", "かんな", "パテ"],
+      "スイッチプレート取付": ["ドライバー", "検電器"],
+      "電気配線": ["電工ペンチ", "検電器", "ドライバー", "ケーブルストリッパー"],
+      "コンセント取付": ["ドライバー", "検電器"],
+      "照明配線": ["電工ペンチ", "検電器", "ドライバー"],
+      "スイッチ取付": ["ドライバー", "検電器"],
+      "給排水配管": ["パイプレンチ", "パイプカッター", "シールテープ"],
+      "給水・井戸接続": ["パイプレンチ", "モンキーレンチ", "シールテープ"],
+      "ガス配管": ["パイプレンチ", "ガス漏れ検知器", "シールテープ"],
+      "ガス機器接続": ["モンキーレンチ", "ガス漏れ検知器"],
+      "冷暖房・換気設置": ["真空ポンプ", "トルクレンチ", "ドライバー"],
+      "エアコン室内外機取付": ["真空ポンプ", "トルクレンチ", "ドリル"],
+      "換気口取付": ["ホールソー", "ドライバー", "コーキングガン"],
+      "ダクト配管": ["板金鋏", "ドライバー", "シールテープ"],
+      "アンテナ取付": ["レンチ", "電波レベルチェッカー", "安全帯"],
+      "火災報知器取付": ["ドライバー", "検電器"],
+      "太陽光パネル取付": ["インパクトドライバー", "安全帯", "トルクレンチ"],
+      "左官下地": ["コテ", "ブラシ", "ミキサー"],
+      "塗壁仕上げ": ["コテ", "ブラシ", "刷毛"],
+      "内壁塗装": ["ローラー", "刷毛", "養生シート"],
+      "木部塗装": ["刷毛", "サンダー", "養生テープ"],
+      "鉄部塗装": ["刷毛", "ワイヤーブラシ", "ケレン棒"],
+      "パテ埋め": ["パテベラ", "サンダー"],
+      "研磨・下地処理": ["サンダー", "ワイヤーブラシ", "高圧洗浄機"],
+      "防水塗装": ["ローラー", "刷毛", "プライマー"],
+      "特殊塗装（光触媒など）": ["ローラー", "刷毛", "スプレーガン"],
+      "塀・フェンス工事": ["インパクトドライバー", "水平器", "コンクリートミキサー"],
+      "門扉取付": ["インパクトドライバー", "水平器", "クランプ"],
+      "駐車場舗装（アスファルト・コンクリート）": ["プレート（転圧機）", "コテ", "生コン車"],
+      "外階段・アプローチ": ["コテ", "型枠", "生コン車"],
+      "給水・ガス引込": ["パイプレンチ", "バックホー", "シールテープ"],
+      "植栽": ["スコップ", "剪定バサミ", "じょうろ"],
+      "照明柱取付": ["インパクトドライバー", "バックホー", "水平器"],
+      "防犯カメラ取付": ["インパクトドライバー", "ドライバー", "脚立"],
+      "表札・看板取付": ["インパクトドライバー", "接着剤"],
+      "インターロッキング舗装": ["ゴムハンマー", "タンパー", "目地砂"],
+      "砂利敷き（外構）": ["スコップ", "一輪車", "レーキ"],
+      "側溝・排水溝施工": ["バックホー", "コテ", "生コン車"],
+      "ピンコロ設置": ["ゴムハンマー", "水平器", "モルタル"],
+      "すき取り・整地": ["バックホー", "スコップ", "レーキ"],
+      "砕石地業": ["ランマー（転圧機）", "スコップ", "一輪車"],
+      "真砂土・バラス整地": ["レーキ", "タンパー", "一輪車"],
+      "伸縮目地入": ["コーキングガン", "ヘラ", "カッター"],
+      "草刈": ["刈払機", "鎌", "熊手"],
+      "樹木伐採": ["チェーンソー", "ロープ", "ヘルメット"],
+      "樹木剪定": ["剪定バサミ", "高枝切りバサミ", "脚立", "チェーンソー"],
+      "落ち葉清掃": ["熊手", "ブロワー", "ゴミ袋"],
+      "側溝清掃": ["スコップ", "高圧洗浄機", "ゴム手袋"],
+      "竹林整備": ["チェーンソー", "刈払機", "ロープ"],
+      "床張替": ["丸のこ", "インパクトドライバー", "ゴムハンマー"],
+      "CFシート貼": ["カッター", "のり", "ローラー"],
+      "タイル貼替": ["コテ", "タイルカッター", "ゴムハンマー"],
+      "クッションフロア貼替": ["カッター", "のり", "ローラー"],
+      "フローリング張替": ["丸のこ", "釘打ち機", "インパクトドライバー"],
+      "モップがけ・ワックス": ["モップ", "ワックス用ポリッシャー", "バケツ"],
+      "壁パネル貼": ["インパクトドライバー", "ボードカッター", "接着剤"],
+      "壁ボード貼": ["ボードカッター", "ビス打ち機", "インパクトドライバー"],
+      "クロス張替": ["のり付け機", "なで刷毛", "ジョイントローラー", "カッター"],
+      "壁塗装補修": ["刷毛", "ローラー", "養生シート"],
+      "天井配線補修": ["ドライバー", "検電器", "脚立"],
+      "樋是正": ["インパクトドライバー", "水平器", "脚立"],
+      "雨漏対策": ["コーキングガン", "防水シート", "カッター"],
+      "防水シート張": ["タッカー", "カッター", "気密テープ"],
+      "コーキング施工": ["コーキングガン", "ヘラ", "マスキングテープ"],
+      "バルコニー防水": ["ローラー", "刷毛", "プライマー"],
+      "ドレン清掃": ["スコップ", "高圧洗浄機", "ゴム手袋"],
+      "防水テープ補修": ["カッター", "防水テープ", "ヘラ"],
+      "廃材・不用品処分": ["一輪車", "ダンプ", "軍手"],
+      "残土処分": ["バックホー", "ダンプ", "スコップ"],
+      "産業廃棄物分別": ["分別ボックス", "軍手", "台車"],
+      "劣化状況診断": ["クラックスケール", "デジタルカメラ", "打診棒"],
+      "見積調査・仕様確認": ["メジャー", "デジタルカメラ", "図面"],
+      "建物状況調査": ["デジタルカメラ", "メジャー", "打診棒"],
+      "床下点検": ["懐中電灯", "防塵マスク", "点検口用はしご"],
+      "屋根裏点検": ["懐中電灯", "防塵マスク", "安全帯"],
+      "断熱材確認": ["懐中電灯", "防塵マスク"],
+      "駐車場整備": ["プレート（転圧機）", "スコップ", "ダンプ"],
+      "屋根修理": ["ハンマー", "コーキングガン", "安全帯"],
+      "外壁修理": ["コーキングガン", "ローラー", "刷毛"],
+      "壁補修": ["パテベラ", "サンダー", "刷毛"],
+      "建具修理": ["ドライバー", "潤滑スプレー", "かんな"],
+      "水回り修理": ["モンキーレンチ", "パイプレンチ", "シールテープ"],
+      "間仕切り壁": ["丸のこ", "インパクトドライバー", "ボードカッター"],
+      "建具取付": ["インパクトドライバー", "かんな", "水平器"],
+      "照明配線（テナント）": ["電工ペンチ", "検電器", "ドライバー"],
+      "コンセント取付（テナント）": ["ドライバー", "検電器"],
+      "シーリング": ["コーキングガン", "ヘラ", "マスキングテープ"],
+      "給排水点検": ["懐中電灯", "水圧計", "モンキーレンチ"],
+      "配線点検": ["検電器", "懐中電灯", "テスター"],
+    };
+
+
+    // ===== 外国人スタッフ向け：ふりがな・多言語辞書 =====
+    const LANG_DICT = {
+      projectType: {
+        new:    { ja: '<ruby>新築<rt>しんちく</rt></ruby><ruby>工事<rt>こうじ</rt></ruby>', vi: 'Xây dựng mới', id: 'Konstruksi bangunan baru' },
+        public: { ja: '<ruby>公社<rt>こうしゃ</rt></ruby><ruby>工事<rt>こうじ</rt></ruby>', vi: 'Công trình nhà ở công cộng', id: 'Pekerjaan perumahan publik (kosha)' },
+        ob:     { ja: 'OB<ruby>客<rt>きゃく</rt></ruby>', vi: 'Khách hàng cũ (OB)', id: 'Pelanggan lama (OB)' },
+        tenant: { ja: 'テナント<ruby>工事<rt>こうじ</rt></ruby>', vi: 'Công trình cho thuê (tenant)', id: 'Pekerjaan renovasi tenant' },
+        other:  { ja: '<ruby>其の他<rt>そのた</rt></ruby>', vi: 'Khác', id: 'Lainnya' }
+      },
+      koujiShubetsu: { ja: '<ruby>工事<rt>こうじ</rt></ruby><ruby>種別<rt>しゅべつ</rt></ruby>', vi: 'Loại công trình', id: 'Jenis pekerjaan konstruksi' },
+      honjitsu: { ja: '<ruby>本日<rt>ほんじつ</rt></ruby>', vi: 'Hôm nay', id: 'Hari ini' },
+      kyouNoJuuten: { ja: '<ruby>今日<rt>きょう</rt></ruby>の<ruby>重点<rt>じゅうてん</rt></ruby>', vi: 'Trọng điểm an toàn hôm nay', id: 'Poin keselamatan penting hari ini' },
+      genbaNoChuui: { ja: '<ruby>現場<rt>げんば</rt></ruby>の<ruby>注意<rt>ちゅうい</rt></ruby>', vi: 'Lưu ý tại công trường', id: 'Perhatian di lokasi kerja' },
+      heatstroke: {
+        '【危険】':     { ja: '<ruby>危険<rt>きけん</rt></ruby>', vi: 'Nguy hiểm', id: 'Berbahaya' },
+        '【厳重警戒】': { ja: '<ruby>厳重<rt>げんじゅう</rt></ruby><ruby>警戒<rt>けいかい</rt></ruby>', vi: 'Cảnh báo nghiêm ngặt', id: 'Kewaspadaan tinggi' },
+        '【警戒】':     { ja: '<ruby>警戒<rt>けいかい</rt></ruby>', vi: 'Cảnh giác', id: 'Waspada' },
+        '【注意】':     { ja: '<ruby>注意<rt>ちゅうい</rt></ruby>', vi: 'Chú ý', id: 'Perhatian' }
+      },
+      heatstrokeLabel: {
+        '作業中止・見直し': { ja: '<ruby>作業<rt>さぎょう</rt></ruby><ruby>中止<rt>ちゅうし</rt></ruby>・<ruby>見直<rt>みなお</rt></ruby>し', vi: 'Dừng công việc, xem xét lại', id: 'Hentikan pekerjaan, tinjau ulang' },
+        '頻繁に休憩・給水': { ja: '<ruby>頻繁<rt>ひんぱん</rt></ruby>に<ruby>休憩<rt>きゅうけい</rt></ruby>・<ruby>給水<rt>きゅうすい</rt></ruby>', vi: 'Nghỉ ngơi và uống nước thường xuyên', id: 'Istirahat dan minum air sesering mungkin' },
+        'こまめに休憩・給水': { ja: 'こまめに<ruby>休憩<rt>きゅうけい</rt></ruby>・<ruby>給水<rt>きゅうすい</rt></ruby>', vi: 'Nghỉ ngơi và uống nước đều đặn', id: 'Istirahat dan minum air secara teratur' },
+        '通常対応': { ja: '<ruby>通常<rt>つうじょう</rt></ruby><ruby>対応<rt>たいおう</rt></ruby>', vi: 'Ứng phó bình thường', id: 'Penanganan normal' }
+      },
+      kion: { ja: '<ruby>気温<rt>きおん</rt></ruby>', vi: 'Nhiệt độ', id: 'Suhu udara' },
+      teikiKyuukei: { ja: '<ruby>定期的<rt>ていきてき</rt></ruby>に<ruby>休憩<rt>きゅうけい</rt></ruby>・<ruby>給水<rt>きゅうすい</rt></ruby>を<ruby>実施<rt>じっし</rt></ruby>', vi: 'Hãy nghỉ ngơi và uống nước định kỳ', id: 'Lakukan istirahat dan minum air secara berkala' },
+      kyuusuiTime: { ja: '<ruby>給水<rt>きゅうすい</rt></ruby>タイム<ruby>例<rt>れい</rt></ruby>', vi: 'Ví dụ giờ uống nước', id: 'Contoh jadwal minum air' },
+      seiriSeiton: { ja: '<ruby>整理<rt>せいり</rt></ruby><ruby>整頓<rt>せいとん</rt></ruby>・<ruby>足元<rt>あしもと</rt></ruby>の<ruby>片付<rt>かたづ</rt></ruby>け（4S）で<ruby>躓<rt>つまず</rt></ruby>き・<ruby>転倒<rt>てんとう</rt></ruby>を<ruby>防<rt>ふせ</rt></ruby>ぐ', vi: 'Sắp xếp gọn gàng, dọn dẹp dưới chân (4S) để tránh vấp ngã', id: 'Rapikan dan bersihkan area kaki (4S) untuk mencegah tersandung/jatuh' },
+      yubisashi: { ja: '<ruby>指差<rt>ゆびさ</rt></ruby><ruby>呼称<rt>こしょう</rt></ruby>ヨシ！<ruby>体調<rt>たいちょう</rt></ruby><ruby>管理<rt>かんり</rt></ruby>ヨシ！', vi: 'Chỉ tay hô tên xác nhận OK! Kiểm tra sức khỏe OK!', id: 'Tunjuk dan sebutkan, OK! Cek kondisi tubuh, OK!' },
+      mujiko: { ja: '<ruby>無事故<rt>むじこ</rt></ruby><ruby>無災害<rt>むさいがい</rt></ruby>でいきましょう💪', vi: 'Hãy cùng nhau làm việc an toàn, không tai nạn! 💪', id: 'Mari kita bekerja dengan aman, tanpa kecelakaan! 💪' },
+      workDetailNote: {
+        ja: '※<ruby>作業内容<rt>さぎょうないよう</rt></ruby>・<ruby>重点安全対策<rt>じゅうてんあんぜんたいさく</rt></ruby>・<ruby>現場<rt>げんば</rt></ruby>の<ruby>詳細<rt>しょうさい</rt></ruby>は<ruby>日本語<rt>にほんご</rt></ruby>のみです。わからない<ruby>点<rt>てん</rt></ruby>はリーダーに<ruby>確認<rt>かくにん</rt></ruby>してください。',
+        vi: '※ Chi tiết nội dung công việc, biện pháp an toàn trọng điểm và lưu ý công trường chỉ có bằng tiếng Nhật. Nếu có điều chưa hiểu, hãy hỏi trực tiếp trưởng nhóm (leader).',
+        id: '※ Detail pekerjaan, langkah keselamatan penting, dan catatan lokasi kerja hanya tersedia dalam bahasa Jepang. Jika ada yang tidak dimengerti, silakan tanyakan langsung ke pemimpin (leader).'
+      }
+    };
+    
+    function showLangHelper(lang, evt) {
+      if (!lastKyContext) return;
+      
+      document.querySelectorAll('.lang-toggle-btn').forEach(b => b.classList.remove('active'));
+      evt.target.classList.add('active');
+      
+      const ctx = lastKyContext;
+      const pt = LANG_DICT.projectType[ctx.projectType] || { ja: '', vi: '', id: '' };
+      const hsLevel = LANG_DICT.heatstroke[ctx.heatstroke.level] || { ja: ctx.heatstroke.level, vi: '', id: '' };
+      const hsLabel = LANG_DICT.heatstrokeLabel[ctx.heatstroke.label] || { ja: ctx.heatstroke.label, vi: '', id: '' };
+      
+      const L = (key) => LANG_DICT[key][lang];
+      
+      let html = '';
+      html += `<div style="margin-bottom:0.5rem;"><strong>${ctx.dateStr} ${ctx.facility}</strong></div>`;
+      html += `<div>${L('koujiShubetsu')}：${pt[lang]} / ${ctx.genre}</div>`;
+      html += `<div style="margin-top:0.4rem;">🏗 ${L('honjitsu')}：${ctx.works.join('、')}</div>`;
+      html += `<div style="margin-top:0.4rem;">⚠ ${L('kyouNoJuuten')}</div>`;
+      html += `<div style="margin-top:0.4rem;">📍 ${L('genbaNoChuui')}</div>`;
+      html += `<div style="margin-top:0.4rem;">🌡 ${hsLevel[lang]}　${L('kion')} ${ctx.temp}℃</div>`;
+      html += `<div>・${hsLabel[lang]}。${L('teikiKyuukei')}</div>`;
+      html += `<div style="margin-top:0.4rem;">🥤 ${L('kyuusuiTime')}：${ctx.waterTimes}</div>`;
+      html += `<div style="margin-top:0.4rem;">💡 ${L('seiriSeiton')}</div>`;
+      html += `<div style="margin-top:0.4rem;">✅ ${L('yubisashi')}</div>`;
+      html += `<div style="margin-top:0.6rem; font-weight:600;">${L('mujiko')}</div>`;
+      html += `<div style="margin-top:0.8rem; padding-top:0.6rem; border-top:1px dashed #ccc; font-size:11px; color:#888;">${L('workDetailNote')}</div>`;
+      
+      const display = document.getElementById('langHelperDisplay');
+      display.innerHTML = html;
+      display.style.display = 'block';
+    }
     
     let currentTab = 0;
     let selectedWorks = [];
+    let selectedTools = [];
+    let lastKyContext = null;
     let selectedLeader = '';
     let selectedLeaderEmoji = '';
     let selectedProjectType = '';
@@ -916,6 +1198,69 @@
       updateProgress();
     }
     
+    function renderToolSuggestions() {
+      const container = document.getElementById('toolSuggestions');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      if (selectedWorks.length === 0) return;
+      
+      // 選択済みの道具のうち、現在の候補に存在しないものは維持（手入力対応）
+      const suggestedSet = new Set();
+      
+      const title = document.createElement('div');
+      title.className = 'tool-suggest-title';
+      title.textContent = '💡 作業内容から道具・機材の候補（タップで追加/解除）';
+      container.appendChild(title);
+      
+      selectedWorks.forEach(work => {
+        const candidates = TOOL_DB[work];
+        if (!candidates || candidates.length === 0) return;
+        
+        const group = document.createElement('div');
+        group.className = 'tool-suggest-group';
+        
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size: 11px; color: #888; margin-bottom: 2px;';
+        label.textContent = `【${work}】`;
+        group.appendChild(label);
+        
+        candidates.forEach(tool => {
+          suggestedSet.add(tool);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'tool-btn' + (selectedTools.includes(tool) ? ' selected' : '');
+          btn.textContent = tool;
+          btn.onclick = () => toggleTool(tool);
+          group.appendChild(btn);
+        });
+        
+        container.appendChild(group);
+      });
+    }
+    
+    function getManualToolExtras() {
+      const raw = document.getElementById('toolsUsed').value || '';
+      const items = raw.split(/[、,，]/).map(s => s.trim()).filter(Boolean);
+      const knownCandidates = new Set();
+      selectedWorks.forEach(w => (TOOL_DB[w] || []).forEach(t => knownCandidates.add(t)));
+      return items.filter(i => !knownCandidates.has(i));
+    }
+    
+    function toggleTool(tool) {
+      const manualExtras = getManualToolExtras().filter(i => i !== tool);
+      
+      if (selectedTools.includes(tool)) {
+        selectedTools = selectedTools.filter(t => t !== tool);
+      } else {
+        selectedTools.push(tool);
+      }
+      
+      document.getElementById('toolsUsed').value = [...manualExtras, ...selectedTools].join('、');
+      renderToolSuggestions();
+      playSound('select');
+    }
+    
     function switchTab(tabIndex) {
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(tb => tb.classList.remove('active'));
@@ -924,6 +1269,11 @@
       document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
       
       currentTab = tabIndex;
+      
+      if (tabIndex === 2) {
+        renderToolSuggestions();
+      }
+      
       updateProgress();
       updateConfirmation();
       updateButtonGroup();
@@ -1341,6 +1691,12 @@
       
       document.getElementById('kySheet').textContent = kyContent;
       
+      lastKyContext = {
+        dateStr, facility, projectType: selectedProjectType, genre: selectedGenre,
+        works: [...selectedWorks], heatstroke, temp: weather.temp, waterTimes
+      };
+      document.getElementById('langHelperDisplay').style.display = 'none';
+      
       document.getElementById('pointsValue').textContent = points;
       document.getElementById('ratingBadge').textContent = ratingEmoji;
       document.getElementById('pointsDisplay').innerHTML += `<div style="font-size: 18px; font-weight: 600;">${rating}評価：${ratingBadge}</div>`;
@@ -1387,6 +1743,19 @@
       document.getElementById('rankingDisplay').innerHTML = rankingHTML;
     }
     
+    function resetRankingHistory() {
+      if (!confirm('⚠️ 今月のランキング履歴（全員のポイント）を削除します。\nこの操作は元に戻せません。よろしいですか？')) {
+        return;
+      }
+      if (!confirm('本当に削除しますか？（最終確認）')) {
+        return;
+      }
+      
+      localStorage.removeItem('monthlyRanking');
+      document.getElementById('rankingDisplay').innerHTML = '<div style="color:#999; font-size:13px;">履歴がリセットされました</div>';
+      playSound('select');
+    }
+    
     function printSheet() {
       window.print();
     }
@@ -1404,6 +1773,8 @@
       document.getElementById('workDetail').value = '';
       document.getElementById('toolsUsed').value = '';
       selectedWorks = [];
+      selectedTools = [];
+      document.getElementById('toolSuggestions').innerHTML = '';
       selectedProjectType = '';
       selectedGenre = '';
       
